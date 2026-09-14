@@ -1,19 +1,21 @@
-local RS = game:GetService("ReplicatedStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
 
 pcall(function()
-    local old = CoreGui:FindFirstChild("RemoteFinder")
-    if old then old:Destroy() end
+    local old = CoreGui:FindFirstChild("RefreshRemoteSpy")
+    if old then
+        old:Destroy()
+    end
 end)
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "RemoteFinder"
+gui.Name = "RefreshRemoteSpy"
 gui.ResetOnSpawn = false
 gui.Parent = CoreGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,420,0,450)
-frame.Position = UDim2.new(0.5,-210,0.5,-225)
+frame.Size = UDim2.new(0, 500, 0, 420)
+frame.Position = UDim2.new(0.5, -250, 0.5, -210)
 frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 frame.BorderSizePixel = 0
 frame.Parent = gui
@@ -22,14 +24,14 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1,-20,0,40)
 title.Position = UDim2.new(0,10,0,5)
 title.BackgroundTransparency = 1
-title.Text = "REMOTE FINDER"
+title.Text = "REFRESH REMOTE SPY"
 title.TextColor3 = Color3.new(1,1,1)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
 title.Parent = frame
 
 local box = Instance.new("TextBox")
-box.Size = UDim2.new(1,-20,1,-100)
+box.Size = UDim2.new(1,-20,1,-105)
 box.Position = UDim2.new(0,10,0,50)
 box.BackgroundColor3 = Color3.fromRGB(10,10,10)
 box.TextColor3 = Color3.new(1,1,1)
@@ -37,16 +39,36 @@ box.TextSize = 13
 box.Font = Enum.Font.Code
 box.TextXAlignment = Enum.TextXAlignment.Left
 box.TextYAlignment = Enum.TextYAlignment.Top
+box.TextWrapped = false
 box.MultiLine = true
 box.ClearTextOnFocus = false
-box.TextEditable = true
-box.TextWrapped = false
-box.Text = "Đang quét..."
+box.TextEditable = false
+box.Text = "Nhấn START SPY rồi click Refresh trong game..."
 box.Parent = frame
 
+local start = Instance.new("TextButton")
+start.Size = UDim2.new(0,150,0,40)
+start.Position = UDim2.new(0,10,1,-50)
+start.BackgroundColor3 = Color3.fromRGB(45,150,70)
+start.Text = "START SPY"
+start.TextColor3 = Color3.new(1,1,1)
+start.TextSize = 15
+start.Font = Enum.Font.GothamBold
+start.Parent = frame
+
+local clear = Instance.new("TextButton")
+clear.Size = UDim2.new(0,100,0,40)
+clear.Position = UDim2.new(0,170,1,-50)
+clear.BackgroundColor3 = Color3.fromRGB(70,70,70)
+clear.Text = "CLEAR"
+clear.TextColor3 = Color3.new(1,1,1)
+clear.TextSize = 15
+clear.Font = Enum.Font.GothamBold
+clear.Parent = frame
+
 local close = Instance.new("TextButton")
-close.Size = UDim2.new(0,100,0,35)
-close.Position = UDim2.new(0.5,-50,1,-45)
+close.Size = UDim2.new(0,100,0,40)
+close.Position = UDim2.new(1,-110,1,-50)
 close.BackgroundColor3 = Color3.fromRGB(180,50,50)
 close.Text = "CLOSE"
 close.TextColor3 = Color3.new(1,1,1)
@@ -54,110 +76,133 @@ close.TextSize = 15
 close.Font = Enum.Font.GothamBold
 close.Parent = frame
 
-local output = {}
+local spying = false
+local logs = {}
+local seen = {}
 
-local function add(text)
-    table.insert(output,text)
+local function addLog(text)
+    table.insert(logs, text)
+
+    if #logs > 100 then
+        table.remove(logs, 1)
+    end
+
+    box.Text = table.concat(logs, "\n")
 end
 
-add("========== REMOTE FINDER ==========")
-add("")
+local function getValue(value, depth)
+    depth = depth or 0
 
-local keywords = {
-    "refresh",
-    "pack",
-    "card",
-    "roll",
-    "buy",
-    "offer",
-    "conveyor"
-}
+    if depth > 2 then
+        return "..."
+    end
 
-local found = 0
+    local t = typeof(value)
 
-for _,obj in ipairs(RS:GetDescendants()) do
+    if t == "string" then
+        return '"' .. value .. '"'
+    elseif t == "number" or t == "boolean" or t == "nil" then
+        return tostring(value)
+    elseif t == "Instance" then
+        return value:GetFullName()
+    elseif t == "table" then
+        local result = "{"
 
-    if obj:IsA("RemoteEvent")
-    or obj:IsA("RemoteFunction") then
+        for k,v in pairs(value) do
+            result = result ..
+                "[" .. tostring(k) .. "]=" ..
+                getValue(v, depth + 1) ..
+                ", "
+        end
 
-        local name = obj.Name:lower()
-        local path = obj:GetFullName():lower()
+        return result .. "}"
+    else
+        return tostring(value)
+    end
+end
 
-        for _,keyword in ipairs(keywords) do
+-- Hook remote calls
+local oldNamecall
 
-            if name:find(keyword,1,true)
-            or path:find(keyword,1,true) then
+if hookmetamethod and getnamecallmethod then
 
-                found += 1
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
 
-                add(
-                    "[" .. obj.ClassName .. "] " ..
-                    obj:GetFullName()
-                )
+        if spying and
+            (method == "FireServer" or method == "InvokeServer") and
+            (self:IsA("RemoteEvent") or self:IsA("RemoteFunction")) then
 
-                break
+            local args = {...}
+            local path = self:GetFullName()
+
+            local id = method .. "|" .. path
+
+            if not seen[id] then
+                seen[id] = true
+
+                addLog("")
+                addLog("========== REMOTE ==========")
+                addLog("Method: " .. method)
+                addLog("Remote: " .. path)
+
+                if #args > 0 then
+                    addLog("Arguments:")
+
+                    for i,v in ipairs(args) do
+                        addLog(
+                            "  [" .. i .. "] " ..
+                            getValue(v)
+                        )
+                    end
+                else
+                    addLog("Arguments: NONE")
+                end
+
+                addLog("============================")
             end
         end
-    end
-end
 
-add("")
-add("========== DONE ==========")
-add("Found: "..found)
+        return oldNamecall(self, ...)
+    end)
 
-local result = table.concat(output,"\n")
-box.Text = result
-
--- THỬ TỰ COPY
-task.wait(0.5)
-
-local copied = false
-
-local clipboardFunctions = {
-    function()
-        if setclipboard then
-            setclipboard(result)
-            return true
-        end
-    end,
-
-    function()
-        if toclipboard then
-            toclipboard(result)
-            return true
-        end
-    end,
-
-    function()
-        if set_clipboard then
-            set_clipboard(result)
-            return true
-        end
-    end,
-
-    function()
-        if Clipboard then
-            Clipboard.set(result)
-            return true
-        end
-    end
-}
-
-for _,func in ipairs(clipboardFunctions) do
-    local success, value = pcall(func)
-
-    if success and value == true then
-        copied = true
-        break
-    end
-end
-
-if copied then
-    title.Text = "REMOTE FINDER - COPIED!"
 else
-    title.Text = "REMOTE FINDER - COPY FAILED"
+    addLog("Executor không hỗ trợ hookmetamethod.")
 end
+
+start.MouseButton1Click:Connect(function()
+
+    spying = not spying
+
+    if spying then
+        seen = {}
+        logs = {}
+
+        box.Text =
+            "SPY ĐANG BẬT\n\n" ..
+            "Bây giờ hãy click REFRESH trong game."
+
+        start.Text = "STOP SPY"
+        start.BackgroundColor3 = Color3.fromRGB(180,120,40)
+
+    else
+
+        start.Text = "START SPY"
+        start.BackgroundColor3 = Color3.fromRGB(45,150,70)
+
+        addLog("")
+        addLog("SPY STOPPED")
+
+    end
+end)
+
+clear.MouseButton1Click:Connect(function()
+    logs = {}
+    seen = {}
+    box.Text = "Đã clear log."
+end)
 
 close.MouseButton1Click:Connect(function()
+    spying = false
     gui:Destroy()
 end)
