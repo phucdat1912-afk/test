@@ -1,7 +1,3 @@
---==================================================
--- 1TAP PACK AUTO FARM
---==================================================
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,16 +10,6 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local RequestConveyorOffer = Remotes:WaitForChild("RequestConveyorOffer")
 local BuyPack = Remotes:WaitForChild("BuyPack")
 local SetRecoverPack = Remotes:WaitForChild("SetRecoverPack")
-
---==================================================
--- REMOVE OLD GUI
---==================================================
-
-local Old = CoreGui:FindFirstChild("1tap_PackFarm")
-
-if Old then
-    Old:Destroy()
-end
 
 --==================================================
 -- SETTINGS
@@ -55,194 +41,228 @@ local GREEN = Color3.fromRGB(100, 220, 130)
 local RED = Color3.fromRGB(230, 90, 90)
 
 --==================================================
+-- REMOVE OLD GUI
+--==================================================
+
+local Old = CoreGui:FindFirstChild("1tap_PackFarm")
+
+if Old then
+    Old:Destroy()
+end
+
+--==================================================
+-- HELPERS
+--==================================================
+
+local function Corner(obj, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 8)
+    c.Parent = obj
+    return c
+end
+
+local function MakeButton(parent, text, size, pos)
+    local button = Instance.new("TextButton")
+
+    button.Size = size
+    button.Position = pos
+    button.BackgroundColor3 = PANEL
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = TEXT
+    button.TextSize = 14
+    button.Font = Enum.Font.Gotham
+    button.AutoButtonColor = false
+    button.Parent = parent
+
+    Corner(button, 6)
+
+    return button
+end
+
+local function MakeLabel(parent, text, size, pos, textSize)
+    local label = Instance.new("TextLabel")
+
+    label.Size = size
+    label.Position = pos
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = TEXT
+    label.TextSize = textSize or 14
+    label.Font = Enum.Font.Gotham
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = parent
+
+    return label
+end
+
+--==================================================
 -- GUI
 --==================================================
 
 local Gui = Instance.new("ScreenGui")
 Gui.Name = "1tap_PackFarm"
 Gui.ResetOnSpawn = false
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.Parent = CoreGui
 
---==================================================
--- MAIN
---==================================================
-
 local Main = Instance.new("Frame")
-Main.Name = "Main"
 Main.Size = UDim2.new(0, 600, 0, 380)
 Main.Position = UDim2.new(0.5, -300, 0.5, -190)
 Main.BackgroundColor3 = BG
 Main.BorderSizePixel = 0
-Main.ZIndex = 1
 Main.Parent = Gui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = Main
+Corner(Main, 10)
+
+--==================================================
+-- SHOW HUB
+--==================================================
+
+local ShowHubButton = Instance.new("TextButton")
+ShowHubButton.Size = UDim2.new(0, 75, 0, 35)
+ShowHubButton.Position = UDim2.new(0, 10, 0.5, -17)
+ShowHubButton.BackgroundColor3 = PANEL
+ShowHubButton.BorderSizePixel = 0
+ShowHubButton.Text = "1tap"
+ShowHubButton.TextColor3 = TEXT
+ShowHubButton.TextSize = 14
+ShowHubButton.Font = Enum.Font.GothamBold
+ShowHubButton.Visible = false
+ShowHubButton.Parent = Gui
+
+Corner(ShowHubButton, 7)
 
 --==================================================
 -- TOP BAR
 --==================================================
 
 local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 50)
-TopBar.BackgroundTransparency = 1
-TopBar.ZIndex = 50
+TopBar.BackgroundColor3 = BG
+TopBar.BorderSizePixel = 0
 TopBar.Parent = Main
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Position = UDim2.new(0, 18, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "1tap"
-Title.TextColor3 = TEXT
-Title.TextSize = 18
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.ZIndex = 51
-Title.Parent = TopBar
+local Title = MakeLabel(
+    TopBar,
+    "1tap",
+    UDim2.new(0, 100, 1, 0),
+    UDim2.new(0, 18, 0, 0),
+    17
+)
 
---==================================================
--- HIDE HUB BUTTON
---==================================================
+Title.Font = Enum.Font.GothamBold
 
 local HideHubButton = Instance.new("TextButton")
-HideHubButton.Name = "HideHubButton"
-HideHubButton.Size = UDim2.new(0, 85, 0, 30)
-HideHubButton.Position = UDim2.new(1, -95, 0, 10)
+HideHubButton.Size = UDim2.new(0, 32, 0, 32)
+HideHubButton.Position = UDim2.new(1, -42, 0, 9)
 HideHubButton.BackgroundColor3 = PANEL
 HideHubButton.BorderSizePixel = 0
-HideHubButton.Text = "HIDE HUB"
+HideHubButton.Text = "—"
 HideHubButton.TextColor3 = TEXT
-HideHubButton.TextSize = 11
+HideHubButton.TextSize = 16
 HideHubButton.Font = Enum.Font.GothamBold
-HideHubButton.AutoButtonColor = false
-HideHubButton.Active = true
-HideHubButton.Selectable = true
-HideHubButton.ZIndex = 60
 HideHubButton.Parent = TopBar
 
-local HideCorner = Instance.new("UICorner")
-HideCorner.CornerRadius = UDim.new(0, 7)
-HideCorner.Parent = HideHubButton
-
---==================================================
--- SHOW HUB BUTTON
---==================================================
-
-local ShowHubButton = Instance.new("TextButton")
-ShowHubButton.Name = "ShowHubButton"
-ShowHubButton.Size = UDim2.new(0, 90, 0, 36)
-ShowHubButton.Position = UDim2.new(0, 15, 0.5, -18)
-ShowHubButton.BackgroundColor3 = BG
-ShowHubButton.BorderSizePixel = 0
-ShowHubButton.Text = "SHOW HUB"
-ShowHubButton.TextColor3 = TEXT
-ShowHubButton.TextSize = 11
-ShowHubButton.Font = Enum.Font.GothamBold
-ShowHubButton.AutoButtonColor = false
-ShowHubButton.Active = true
-ShowHubButton.Selectable = true
-ShowHubButton.Visible = false
-ShowHubButton.ZIndex = 100
-ShowHubButton.Parent = Gui
-
-local ShowCorner = Instance.new("UICorner")
-ShowCorner.CornerRadius = UDim.new(0, 8)
-ShowCorner.Parent = ShowHubButton
-
---==================================================
--- HIDE / SHOW
---==================================================
-
-HideHubButton.MouseEnter:Connect(function()
-    HideHubButton.BackgroundColor3 = SELECTED
-end)
-
-HideHubButton.MouseLeave:Connect(function()
-    HideHubButton.BackgroundColor3 = PANEL
-end)
-
-ShowHubButton.MouseEnter:Connect(function()
-    ShowHubButton.BackgroundColor3 = SELECTED
-end)
-
-ShowHubButton.MouseLeave:Connect(function()
-    ShowHubButton.BackgroundColor3 = BG
-end)
-
-HideHubButton.Activated:Connect(function()
-
-    Main.Visible = false
-    ShowHubButton.Visible = true
-
-end)
-
-ShowHubButton.Activated:Connect(function()
-
-    Main.Visible = true
-    ShowHubButton.Visible = false
-
-end)
+Corner(HideHubButton, 6)
 
 --==================================================
 -- DRAG MAIN
 --==================================================
 
-local Dragging = false
-local DragStart
-local StartPosition
+local dragging = false
+local dragStart
+local startPos
 
-TopBar.InputBegan:Connect(function(Input)
+TopBar.InputBegan:Connect(function(input)
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
 
-        -- Do not start dragging when clicking the HIDE HUB button
-        if Input.Target == HideHubButton then
-            return
-        end
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
 
-        Dragging = true
-        DragStart = Input.Position
-        StartPosition = Main.Position
+        input.Changed:Connect(function()
 
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+
+        end)
     end
 
 end)
 
-UserInputService.InputChanged:Connect(function(Input)
+UserInputService.InputChanged:Connect(function(input)
 
-    if not Dragging then
+    if not dragging then
         return
     end
 
-    if Input.UserInputType == Enum.UserInputType.MouseMovement
-        or Input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
 
-        local Delta = Input.Position - DragStart
+    local delta = input.Position - dragStart
 
-        Main.Position = UDim2.new(
-            StartPosition.X.Scale,
-            StartPosition.X.Offset + Delta.X,
-            StartPosition.Y.Scale,
-            StartPosition.Y.Offset + Delta.Y
-        )
+    Main.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
 
+end)
+
+--==================================================
+-- DRAG SHOW BUTTON
+--==================================================
+
+local draggingShow = false
+local showDragStart
+local showStartPos
+
+ShowHubButton.InputBegan:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        draggingShow = true
+        showDragStart = input.Position
+        showStartPos = ShowHubButton.Position
+
+        input.Changed:Connect(function()
+
+            if input.UserInputState == Enum.UserInputState.End then
+                draggingShow = false
+            end
+
+        end)
     end
 
 end)
 
-UserInputService.InputEnded:Connect(function(Input)
+UserInputService.InputChanged:Connect(function(input)
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
-
-        Dragging = false
-
+    if not draggingShow then
+        return
     end
+
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local delta = input.Position - showDragStart
+
+    ShowHubButton.Position = UDim2.new(
+        showStartPos.X.Scale,
+        showStartPos.X.Offset + delta.X,
+        showStartPos.Y.Scale,
+        showStartPos.Y.Offset + delta.Y
+    )
 
 end)
 
@@ -255,20 +275,39 @@ Sidebar.Size = UDim2.new(0, 150, 1, -50)
 Sidebar.Position = UDim2.new(0, 0, 0, 50)
 Sidebar.BackgroundColor3 = SIDEBAR
 Sidebar.BorderSizePixel = 0
-Sidebar.ZIndex = 10
 Sidebar.Parent = Main
 
-local Menu = Instance.new("TextLabel")
-Menu.Size = UDim2.new(1, -20, 0, 25)
-Menu.Position = UDim2.new(0, 10, 0, 12)
-Menu.BackgroundTransparency = 1
-Menu.Text = "MENU"
-Menu.TextColor3 = SUBTEXT
-Menu.TextSize = 10
-Menu.Font = Enum.Font.GothamBold
-Menu.TextXAlignment = Enum.TextXAlignment.Left
-Menu.ZIndex = 11
-Menu.Parent = Sidebar
+local MenuLabel = MakeLabel(
+    Sidebar,
+    "MENU",
+    UDim2.new(1, -30, 0, 30),
+    UDim2.new(0, 15, 0, 15),
+    11
+)
+
+MenuLabel.TextColor3 = SUBTEXT
+MenuLabel.Font = Enum.Font.GothamBold
+
+local FarmTab = MakeButton(
+    Sidebar,
+    "FARM",
+    UDim2.new(1, -20, 0, 38),
+    UDim2.new(0, 10, 0, 50)
+)
+
+local SettingsTab = MakeButton(
+    Sidebar,
+    "SETTINGS",
+    UDim2.new(1, -20, 0, 38),
+    UDim2.new(0, 10, 0, 94)
+)
+
+local LogsTab = MakeButton(
+    Sidebar,
+    "LOGS",
+    UDim2.new(1, -20, 0, 38),
+    UDim2.new(0, 10, 0, 138)
+)
 
 --==================================================
 -- CONTENT
@@ -279,628 +318,358 @@ Content.Size = UDim2.new(1, -150, 1, -50)
 Content.Position = UDim2.new(0, 150, 0, 50)
 Content.BackgroundColor3 = BG
 Content.BorderSizePixel = 0
-Content.ZIndex = 2
 Content.Parent = Main
-
---==================================================
--- TAB SYSTEM
---==================================================
-
-local Tabs = {}
-local Pages = {}
-local CurrentTab = nil
-
-local function CreateTab(Name, Text, Y)
-
-    local Button = Instance.new("TextButton")
-
-    Button.Name = Name .. "Button"
-    Button.Size = UDim2.new(1, -20, 0, 40)
-    Button.Position = UDim2.new(0, 10, 0, Y)
-
-    Button.BackgroundColor3 = SIDEBAR
-    Button.BorderSizePixel = 0
-
-    Button.Text = Text
-    Button.TextColor3 = SUBTEXT
-    Button.TextSize = 13
-    Button.Font = Enum.Font.GothamMedium
-    Button.TextXAlignment = Enum.TextXAlignment.Left
-
-    Button.AutoButtonColor = false
-    Button.Active = true
-    Button.Selectable = true
-    Button.ZIndex = 20
-
-    Button.Parent = Sidebar
-
-    local Padding = Instance.new("UIPadding")
-    Padding.PaddingLeft = UDim.new(0, 12)
-    Padding.Parent = Button
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 7)
-    Corner.Parent = Button
-
-    local Page = Instance.new("Frame")
-
-    Page.Name = Name .. "Page"
-    Page.Size = UDim2.new(1, -30, 1, -30)
-    Page.Position = UDim2.new(0, 15, 0, 15)
-
-    Page.BackgroundTransparency = 1
-    Page.BorderSizePixel = 0
-    Page.Visible = false
-    Page.ZIndex = 5
-
-    Page.Parent = Content
-
-    Tabs[Name] = Button
-    Pages[Name] = Page
-
-    return Button, Page
-end
-
-local FarmButton, FarmPage =
-    CreateTab("Farm", "  FARM", 45)
-
-local SettingsButton, SettingsPage =
-    CreateTab("Settings", "  SETTINGS", 90)
-
-local LogsButton, LogsPage =
-    CreateTab("Logs", "  LOGS", 135)
-
---==================================================
--- HELPERS
---==================================================
-
-local function CreateLabel(Parent, Text, Position, Size)
-
-    local Label = Instance.new("TextLabel")
-
-    Label.Size = Size or UDim2.new(1, 0, 0, 30)
-    Label.Position = Position or UDim2.new(0, 0, 0, 0)
-
-    Label.BackgroundTransparency = 1
-    Label.Text = Text
-    Label.TextColor3 = TEXT
-    Label.TextSize = 16
-    Label.Font = Enum.Font.GothamBold
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.ZIndex = 6
-
-    Label.Parent = Parent
-
-    return Label
-end
-
-local function CreateButton(Parent, Text, Position, Size)
-
-    local Button = Instance.new("TextButton")
-
-    Button.Size = Size
-    Button.Position = Position
-
-    Button.BackgroundColor3 = PANEL
-    Button.BorderSizePixel = 0
-
-    Button.Text = Text
-    Button.TextColor3 = TEXT
-    Button.TextSize = 13
-    Button.Font = Enum.Font.GothamMedium
-
-    Button.AutoButtonColor = false
-    Button.Active = true
-    Button.Selectable = true
-    Button.ZIndex = 10
-
-    Button.Parent = Parent
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 7)
-    Corner.Parent = Button
-
-    return Button
-end
 
 --==================================================
 -- FARM PAGE
 --==================================================
 
-CreateLabel(
+local FarmPage = Instance.new("Frame")
+FarmPage.Size = UDim2.new(1, 0, 1, 0)
+FarmPage.BackgroundTransparency = 1
+FarmPage.Parent = Content
+
+local FarmTitle = MakeLabel(
     FarmPage,
     "Pack Auto Farm",
-    UDim2.new(0, 0, 0, 0),
-    UDim2.new(1, 0, 0, 35)
+    UDim2.new(1, -40, 0, 35),
+    UDim2.new(0, 20, 0, 20),
+    18
 )
 
-local FarmStatus = CreateLabel(
+FarmTitle.Font = Enum.Font.GothamBold
+
+local FarmStatus = MakeLabel(
     FarmPage,
     "Status: STOPPED",
-    UDim2.new(0, 0, 0, 45),
-    UDim2.new(1, 0, 0, 30)
+    UDim2.new(1, -40, 0, 25),
+    UDim2.new(0, 20, 0, 58),
+    13
 )
 
 FarmStatus.TextColor3 = RED
 
-local StartButton = CreateButton(
+local StartButton = MakeButton(
     FarmPage,
     "START",
-    UDim2.new(0, 0, 0, 85),
-    UDim2.new(0, 125, 0, 38)
+    UDim2.new(0, 120, 0, 38),
+    UDim2.new(0, 20, 0, 95)
 )
 
-local StopButton = CreateButton(
+StartButton.BackgroundColor3 = GREEN
+StartButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+local StopButton = MakeButton(
     FarmPage,
     "STOP",
-    UDim2.new(0, 135, 0, 85),
-    UDim2.new(0, 125, 0, 38)
+    UDim2.new(0, 120, 0, 38),
+    UDim2.new(0, 150, 0, 95)
 )
 
-CreateLabel(
+StopButton.BackgroundColor3 = RED
+StopButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+local HSRButton = MakeButton(
     FarmPage,
-    "Allowed Packs",
-    UDim2.new(0, 0, 0, 140),
-    UDim2.new(1, 0, 0, 25)
+    "HSR Pack: OFF",
+    UDim2.new(0, 220, 0, 40),
+    UDim2.new(0, 20, 0, 155)
 )
 
-local HSRButton = CreateButton(
+local EternityButton = MakeButton(
     FarmPage,
-    "HSR Pack: ON",
-    UDim2.new(0, 0, 0, 170),
-    UDim2.new(0, 180, 0, 38)
-)
-
-local EternityButton = CreateButton(
-    FarmPage,
-    "Eternity Pack: ON",
-    UDim2.new(0, 190, 0, 170),
-    UDim2.new(0, 180, 0, 38)
+    "Eternity Pack: OFF",
+    UDim2.new(0, 220, 0, 40),
+    UDim2.new(0, 20, 0, 205)
 )
 
 --==================================================
 -- SETTINGS PAGE
 --==================================================
 
-CreateLabel(
+local SettingsPage = Instance.new("Frame")
+SettingsPage.Size = UDim2.new(1, 0, 1, 0)
+SettingsPage.BackgroundTransparency = 1
+SettingsPage.Visible = false
+SettingsPage.Parent = Content
+
+local SettingsTitle = MakeLabel(
     SettingsPage,
     "Settings",
-    UDim2.new(0, 0, 0, 0),
-    UDim2.new(1, 0, 0, 35)
+    UDim2.new(1, -40, 0, 35),
+    UDim2.new(0, 20, 0, 20),
+    18
 )
 
-local DelayLabel = CreateLabel(
+SettingsTitle.Font = Enum.Font.GothamBold
+
+local DelayLabel = MakeLabel(
     SettingsPage,
     "Delay: 1.5",
-    UDim2.new(0, 0, 0, 50),
-    UDim2.new(1, 0, 0, 30)
+    UDim2.new(0, 200, 0, 30),
+    UDim2.new(0, 20, 0, 70),
+    14
 )
 
-local DelayMinus = CreateButton(
+local MinusButton = MakeButton(
     SettingsPage,
     "-",
-    UDim2.new(0, 0, 0, 90),
-    UDim2.new(0, 50, 0, 35)
+    UDim2.new(0, 40, 0, 35),
+    UDim2.new(0, 20, 0, 110)
 )
 
-local DelayPlus = CreateButton(
+local PlusButton = MakeButton(
     SettingsPage,
     "+",
-    UDim2.new(0, 60, 0, 90),
-    UDim2.new(0, 50, 0, 35)
+    UDim2.new(0, 40, 0, 35),
+    UDim2.new(0, 70, 0, 110)
 )
 
-local AFKButton = CreateButton(
+local AntiAFKButton = MakeButton(
     SettingsPage,
     "Anti-AFK: ON",
-    UDim2.new(0, 0, 0, 140),
-    UDim2.new(0, 180, 0, 38)
+    UDim2.new(0, 180, 0, 38),
+    UDim2.new(0, 20, 0, 165)
 )
 
 --==================================================
--- LOG PAGE
+-- LOGS PAGE
 --==================================================
 
-CreateLabel(
+local LogsPage = Instance.new("Frame")
+LogsPage.Size = UDim2.new(1, 0, 1, 0)
+LogsPage.BackgroundTransparency = 1
+LogsPage.Visible = false
+LogsPage.Parent = Content
+
+local LogsTitle = MakeLabel(
     LogsPage,
     "Logs",
-    UDim2.new(0, 0, 0, 0),
-    UDim2.new(1, 0, 0, 35)
+    UDim2.new(0, 200, 0, 35),
+    UDim2.new(0, 20, 0, 20),
+    18
 )
 
--- Clear Logs stays inside LOGS page
--- It is independent from the HIDE HUB button.
+LogsTitle.Font = Enum.Font.GothamBold
 
-local ClearLogsButton = CreateButton(
+local ClearLogsButton = MakeButton(
     LogsPage,
     "Clear Logs",
-    UDim2.new(0, 350, 0, 0),
-    UDim2.new(0, 100, 0, 32)
+    UDim2.new(0, 100, 0, 32),
+    UDim2.new(0, 350, 0, 0)
 )
 
 local LogContainer = Instance.new("Frame")
-LogContainer.Size = UDim2.new(1, 0, 1, -50)
-LogContainer.Position = UDim2.new(0, 0, 0, 45)
+LogContainer.Size = UDim2.new(1, -40, 0, 235)
+LogContainer.Position = UDim2.new(0, 20, 0, 60)
 LogContainer.BackgroundColor3 = PANEL
 LogContainer.BorderSizePixel = 0
-LogContainer.ZIndex = 5
 LogContainer.Parent = LogsPage
 
-local LogCorner = Instance.new("UICorner")
-LogCorner.CornerRadius = UDim.new(0, 8)
-LogCorner.Parent = LogContainer
-
-local LogLabels = {}
+Corner(LogContainer, 7)
 
 --==================================================
 -- LOG FUNCTION
 --==================================================
 
-local function ClearLogs()
+local function RefreshLogs()
 
-    Logs = {}
+    for _, child in ipairs(LogContainer:GetChildren()) do
 
-    for _, Label in ipairs(LogLabels) do
-
-        if Label then
-            Label:Destroy()
+        if child:IsA("TextLabel") then
+            child:Destroy()
         end
 
     end
 
-    LogLabels = {}
+    for i, log in ipairs(Logs) do
 
-end
+        local label = Instance.new("TextLabel")
 
-local function AddLog(Text)
+        label.Size = UDim2.new(1, -20, 0, 30)
+        label.Position = UDim2.new(
+            0,
+            10,
+            0,
+            (i - 1) * 30 + 5
+        )
 
-    table.insert(Logs, Text)
-
-    while #Logs > 5 do
-        table.remove(Logs, 1)
-    end
-
-    for _, Label in ipairs(LogLabels) do
-
-        if Label then
-            Label:Destroy()
-        end
-
-    end
-
-    LogLabels = {}
-
-    for Index, Message in ipairs(Logs) do
-
-        local Label = Instance.new("TextLabel")
-
-        Label.Size = UDim2.new(1, -20, 0, 30)
-        Label.Position = UDim2.new(0, 10, 0, (Index - 1) * 30)
-
-        Label.BackgroundTransparency = 1
-        Label.Text = Message
-        Label.TextColor3 = TEXT
-        Label.TextSize = 12
-        Label.Font = Enum.Font.Gotham
-        Label.TextXAlignment = Enum.TextXAlignment.Left
-        Label.ZIndex = 6
-
-        Label.Parent = LogContainer
-
-        table.insert(LogLabels, Label)
+        label.BackgroundTransparency = 1
+        label.Text = tostring(log)
+        label.TextColor3 = TEXT
+        label.TextSize = 12
+        label.Font = Enum.Font.Code
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = LogContainer
 
     end
-end
-
-ClearLogsButton.Activated:Connect(function()
-    ClearLogs()
-end)
-
---==================================================
--- TAB SELECT
---==================================================
-
-local function SelectTab(Name)
-
-    if not Tabs[Name] then
-        return
-    end
-
-    CurrentTab = Name
-
-    for TabName, Button in pairs(Tabs) do
-
-        if TabName == Name then
-
-            Button.BackgroundColor3 = SELECTED
-            Button.TextColor3 = TEXT
-
-        else
-
-            Button.BackgroundColor3 = SIDEBAR
-            Button.TextColor3 = SUBTEXT
-
-        end
-
-    end
-
-    for PageName, Page in pairs(Pages) do
-
-        Page.Visible = PageName == Name
-
-    end
-
-end
-
-FarmButton.Activated:Connect(function()
-    SelectTab("Farm")
-end)
-
-SettingsButton.Activated:Connect(function()
-    SelectTab("Settings")
-end)
-
-LogsButton.Activated:Connect(function()
-    SelectTab("Logs")
-end)
-
-for Name, Button in pairs(Tabs) do
-
-    Button.MouseEnter:Connect(function()
-
-        if CurrentTab ~= Name then
-            Button.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
-        end
-
-    end)
-
-    Button.MouseLeave:Connect(function()
-
-        if CurrentTab ~= Name then
-            Button.BackgroundColor3 = SIDEBAR
-        end
-
-    end)
 
 end
 
 --==================================================
--- PACK TOGGLE
+-- AUTO CLEAR AFTER 8 LOGS
+--==================================================
+
+local function AddLog(text)
+
+    if #Logs >= 8 then
+        table.clear(Logs)
+    end
+
+    table.insert(
+        Logs,
+        os.date("%H:%M:%S") .. " | " .. tostring(text)
+    )
+
+    RefreshLogs()
+
+end
+
+--==================================================
+-- PACK BUTTONS
 --==================================================
 
 local function UpdatePackButtons()
 
     if AllowedPacks["HSR Pack"] then
         HSRButton.Text = "HSR Pack: ON"
+        HSRButton.BackgroundColor3 = SELECTED
     else
         HSRButton.Text = "HSR Pack: OFF"
+        HSRButton.BackgroundColor3 = PANEL
     end
 
     if AllowedPacks["Eternity Pack"] then
         EternityButton.Text = "Eternity Pack: ON"
+        EternityButton.BackgroundColor3 = SELECTED
     else
         EternityButton.Text = "Eternity Pack: OFF"
+        EternityButton.BackgroundColor3 = PANEL
     end
 
 end
 
-HSRButton.Activated:Connect(function()
-
-    AllowedPacks["HSR Pack"] = not AllowedPacks["HSR Pack"]
-
-    UpdatePackButtons()
-
-    AddLog(
-        "HSR Pack " ..
-        (AllowedPacks["HSR Pack"] and "enabled" or "disabled")
-    )
-
-end)
-
-EternityButton.Activated:Connect(function()
-
-    AllowedPacks["Eternity Pack"] =
-        not AllowedPacks["Eternity Pack"]
-
-    UpdatePackButtons()
-
-    AddLog(
-        "Eternity Pack " ..
-        (AllowedPacks["Eternity Pack"] and "enabled" or "disabled")
-    )
-
-end)
-
 --==================================================
--- DELAY
---==================================================
-
-DelayMinus.Activated:Connect(function()
-
-    Delay = math.max(0.2, Delay - 0.1)
-
-    Delay = math.floor(Delay * 10 + 0.5) / 10
-
-    DelayLabel.Text = "Delay: " .. tostring(Delay)
-
-end)
-
-DelayPlus.Activated:Connect(function()
-
-    Delay = Delay + 0.1
-
-    Delay = math.floor(Delay * 10 + 0.5) / 10
-
-    DelayLabel.Text = "Delay: " .. tostring(Delay)
-
-end)
-
---==================================================
--- ANTI AFK
---==================================================
-
-AFKButton.Activated:Connect(function()
-
-    AntiAFK = not AntiAFK
-
-    if AntiAFK then
-        AFKButton.Text = "Anti-AFK: ON"
-    else
-        AFKButton.Text = "Anti-AFK: OFF"
-    end
-
-    AddLog(
-        "Anti-AFK " ..
-        (AntiAFK and "enabled" or "disabled")
-    )
-
-end)
-
-Player.Idled:Connect(function()
-
-    if AntiAFK then
-
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new(0, 0))
-
-    end
-
-end)
-
---==================================================
--- BUY / ROLL
+-- AUTO BUY + AUTO ROLL
 --==================================================
 
 local function BuyAndRoll()
 
-    local Success, Offers = pcall(function()
-
+    local success, result = pcall(function()
         return RequestConveyorOffer:InvokeServer(1)
-
     end)
 
-    if not Success then
-
-        AddLog("Request offer failed")
+    if not success or typeof(result) ~= "table" then
+        AddLog("ERROR: Không lấy được offer")
         return
-
     end
 
-    if type(Offers) ~= "table" then
+    for _, offer in pairs(result) do
 
-        AddLog("No offers returned")
-        return
+        if typeof(offer) ~= "table" then
+            continue
+        end
 
-    end
+        local offerId = offer.OfferId
+        local packName = offer.PackName
+        local mutation = offer.Mutation
 
-    local Bought = false
+        print(
+            "Offer:",
+            packName,
+            mutation,
+            offerId
+        )
 
-    for _, Offer in pairs(Offers) do
+        AddLog(
+            "Offer: "
+            .. tostring(packName)
+            .. " | "
+            .. tostring(mutation)
+        )
 
-        if type(Offer) == "table" then
+        if AllowedPacks[packName] then
 
-            local PackName = Offer.PackName
-            local Mutation = Offer.Mutation
-            local OfferId = Offer.OfferId
+            AddLog(
+                "Buying: "
+                .. tostring(packName)
+                .. " | "
+                .. tostring(mutation)
+            )
 
-            if PackName
-                and Mutation
-                and OfferId
-                and AllowedPacks[PackName] then
+            local buySuccess, buyError = pcall(function()
 
-                local BuySuccess = pcall(function()
+                BuyPack:FireServer(
+                    packName,
+                    mutation,
+                    offerId
+                )
 
-                    BuyPack:FireServer(
-                        PackName,
-                        Mutation,
-                        OfferId
-                    )
+            end)
 
-                end)
+            if not buySuccess then
 
-                if BuySuccess then
+                warn(
+                    "BuyPack lỗi:",
+                    buyError
+                )
 
-                    AddLog(
-                        "Bought: " ..
-                        tostring(PackName)
-                    )
-
-                    task.wait(0.5)
-
-                    pcall(function()
-
-                        SetRecoverPack:FireServer(
-                            OfferId
-                        )
-
-                    end)
-
-                    AddLog(
-                        "Recover: " ..
-                        tostring(PackName)
-                    )
-
-                    Bought = true
-
-                    break
-
-                else
-
-                    AddLog(
-                        "Buy failed: " ..
-                        tostring(PackName)
-                    )
-
-                end
+                AddLog("ERROR: BuyPack")
+                return
 
             end
 
+            AddLog(
+                "Bought: "
+                .. tostring(packName)
+            )
+
+            task.wait(0.5)
+
+            local rollSuccess, rollError = pcall(function()
+
+                SetRecoverPack:FireServer(
+                    offerId
+                )
+
+            end)
+
+            if not rollSuccess then
+
+                warn(
+                    "SetRecoverPack lỗi:",
+                    rollError
+                )
+
+                AddLog("ERROR: SetRecoverPack")
+
+            else
+
+                print(
+                    "Đã Roll:",
+                    packName,
+                    offerId
+                )
+
+                AddLog(
+                    "ROLLED: "
+                    .. tostring(packName)
+                    .. " | "
+                    .. tostring(mutation)
+                )
+
+            end
+
+            return
         end
-
     end
 
-    if not Bought then
-        AddLog("No selected pack found")
-    end
+    AddLog("Skipped: Pack không được chọn")
 
 end
 
 --==================================================
--- START / STOP
---==================================================
-
-StartButton.Activated:Connect(function()
-
-    if Running then
-        return
-    end
-
-    Running = true
-
-    FarmStatus.Text = "Status: RUNNING"
-    FarmStatus.TextColor3 = GREEN
-
-    AddLog("Auto Farm started")
-
-end)
-
-StopButton.Activated:Connect(function()
-
-    if not Running then
-        return
-    end
-
-    Running = false
-
-    FarmStatus.Text = "Status: STOPPED"
-    FarmStatus.TextColor3 = RED
-
-    AddLog("Auto Farm stopped")
-
-end)
-
---==================================================
--- AUTO FARM LOOP
+-- AUTO LOOP
 --==================================================
 
 task.spawn(function()
@@ -924,10 +693,218 @@ task.spawn(function()
 end)
 
 --==================================================
--- DEFAULT
+-- START / STOP
+--==================================================
+
+StartButton.MouseButton1Click:Connect(function()
+
+    if Running then
+        return
+    end
+
+    Running = true
+
+    FarmStatus.Text = "Status: RUNNING"
+    FarmStatus.TextColor3 = GREEN
+
+    AddLog("Auto Farm STARTED")
+
+end)
+
+StopButton.MouseButton1Click:Connect(function()
+
+    if not Running then
+        return
+    end
+
+    Running = false
+
+    FarmStatus.Text = "Status: STOPPED"
+    FarmStatus.TextColor3 = RED
+
+    AddLog("Auto Farm STOPPED")
+
+end)
+
+--==================================================
+-- PACK TOGGLES
+--==================================================
+
+HSRButton.MouseButton1Click:Connect(function()
+
+    AllowedPacks["HSR Pack"] =
+        not AllowedPacks["HSR Pack"]
+
+    UpdatePackButtons()
+
+    AddLog(
+        "HSR Pack: "
+        .. tostring(AllowedPacks["HSR Pack"])
+    )
+
+end)
+
+EternityButton.MouseButton1Click:Connect(function()
+
+    AllowedPacks["Eternity Pack"] =
+        not AllowedPacks["Eternity Pack"]
+
+    UpdatePackButtons()
+
+    AddLog(
+        "Eternity Pack: "
+        .. tostring(AllowedPacks["Eternity Pack"])
+    )
+
+end)
+
+--==================================================
+-- DELAY
+--==================================================
+
+local function UpdateDelay()
+
+    DelayLabel.Text =
+        "Delay: "
+        .. string.format("%.1f", Delay)
+
+end
+
+MinusButton.MouseButton1Click:Connect(function()
+
+    Delay = math.max(
+        0.2,
+        math.round((Delay - 0.1) * 10) / 10
+    )
+
+    UpdateDelay()
+
+end)
+
+PlusButton.MouseButton1Click:Connect(function()
+
+    Delay =
+        math.round((Delay + 0.1) * 10) / 10
+
+    UpdateDelay()
+
+end)
+
+--==================================================
+-- ANTI AFK
+--==================================================
+
+AntiAFKButton.MouseButton1Click:Connect(function()
+
+    AntiAFK = not AntiAFK
+
+    if AntiAFK then
+
+        AntiAFKButton.Text = "Anti-AFK: ON"
+        AntiAFKButton.BackgroundColor3 = SELECTED
+
+    else
+
+        AntiAFKButton.Text = "Anti-AFK: OFF"
+        AntiAFKButton.BackgroundColor3 = PANEL
+
+    end
+
+end)
+
+Player.Idled:Connect(function()
+
+    if not AntiAFK then
+        return
+    end
+
+    VirtualUser:CaptureController()
+
+    VirtualUser:ClickButton2(
+        Vector2.new(0, 0)
+    )
+
+end)
+
+--==================================================
+-- CLEAR LOGS BUTTON
+--==================================================
+
+ClearLogsButton.MouseButton1Click:Connect(function()
+
+    table.clear(Logs)
+    RefreshLogs()
+
+end)
+
+--==================================================
+-- HIDE / SHOW HUB
+--==================================================
+
+HideHubButton.MouseButton1Click:Connect(function()
+
+    Main.Visible = false
+    ShowHubButton.Visible = true
+
+end)
+
+ShowHubButton.MouseButton1Click:Connect(function()
+
+    Main.Visible = true
+    ShowHubButton.Visible = false
+
+end)
+
+--==================================================
+-- TABS
+--==================================================
+
+local function SelectTab(tab)
+
+    FarmPage.Visible = false
+    SettingsPage.Visible = false
+    LogsPage.Visible = false
+
+    FarmTab.BackgroundColor3 = PANEL
+    SettingsTab.BackgroundColor3 = PANEL
+    LogsTab.BackgroundColor3 = PANEL
+
+    if tab == "Farm" then
+
+        FarmPage.Visible = true
+        FarmTab.BackgroundColor3 = SELECTED
+
+    elseif tab == "Settings" then
+
+        SettingsPage.Visible = true
+        SettingsTab.BackgroundColor3 = SELECTED
+
+    elseif tab == "Logs" then
+
+        LogsPage.Visible = true
+        LogsTab.BackgroundColor3 = SELECTED
+
+    end
+
+end
+
+FarmTab.MouseButton1Click:Connect(function()
+    SelectTab("Farm")
+end)
+
+SettingsTab.MouseButton1Click:Connect(function()
+    SelectTab("Settings")
+end)
+
+LogsTab.MouseButton1Click:Connect(function()
+    SelectTab("Logs")
+end)
+
+--==================================================
+-- INIT
 --==================================================
 
 UpdatePackButtons()
+UpdateDelay()
 SelectTab("Farm")
-
 AddLog("1tap Pack Farm loaded")
