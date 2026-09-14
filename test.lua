@@ -3,139 +3,282 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Player = Players.LocalPlayer
-local GetConveyorInfo = ReplicatedStorage
-    :WaitForChild("Remotes")
-    :WaitForChild("GetConveyorInfo")
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local GetConveyorInfo = Remotes:WaitForChild("GetConveyorInfo")
 
--- Xóa GUI cũ
+--==================================================
+-- XÓA GUI CŨ
+--==================================================
+
 pcall(function()
-    local old = game:GetService("CoreGui"):FindFirstChild("OuroborosRefresh")
+    local old = game:GetService("CoreGui"):FindFirstChild("ACM_Refresh")
     if old then
         old:Destroy()
     end
 end)
 
+--==================================================
 -- GUI
+--==================================================
+
 local gui = Instance.new("ScreenGui")
-gui.Name = "OuroborosRefresh"
+gui.Name = "ACM_Refresh"
 gui.ResetOnSpawn = false
 gui.Parent = game:GetService("CoreGui")
 
--- Main
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 300, 0, 180)
-main.Position = UDim2.new(0.5, -150, 0.5, -90)
-main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+main.Size = UDim2.new(0, 420, 0, 360)
+main.Position = UDim2.new(0.5, -210, 0.5, -180)
+main.BackgroundColor3 = Color3.fromRGB(24,24,24)
 main.BorderSizePixel = 0
 main.Parent = gui
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = main
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0,8)
+mainCorner.Parent = main
 
--- Header
+--==================================================
+-- HEADER
+--==================================================
+
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 42)
-header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+header.Size = UDim2.new(1,0,0,42)
+header.BackgroundColor3 = Color3.fromRGB(35,35,35)
 header.BorderSizePixel = 0
 header.Parent = main
 
 local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 8)
+headerCorner.CornerRadius = UDim.new(0,8)
 headerCorner.Parent = header
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -50, 1, 0)
-title.Position = UDim2.new(0, 15, 0, 0)
+title.Size = UDim2.new(1,-50,1,0)
+title.Position = UDim2.new(0,14,0,0)
 title.BackgroundTransparency = 1
-title.Text = "Ouroboros • Refresh"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Text = "Anime Card Multiverse"
+title.TextColor3 = Color3.new(1,1,1)
 title.TextSize = 16
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
--- Close
 local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 32, 0, 32)
-close.Position = UDim2.new(1, -38, 0, 5)
-close.BackgroundColor3 = Color3.fromRGB(180, 55, 55)
+close.Size = UDim2.new(0,32,0,32)
+close.Position = UDim2.new(1,-38,0,5)
+close.BackgroundColor3 = Color3.fromRGB(175,50,50)
 close.Text = "×"
-close.TextColor3 = Color3.new(1, 1, 1)
+close.TextColor3 = Color3.new(1,1,1)
 close.TextSize = 22
 close.Font = Enum.Font.GothamBold
 close.Parent = header
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.CornerRadius = UDim.new(0,6)
 closeCorner.Parent = close
 
--- Refresh button
+--==================================================
+-- REFRESH BUTTON
+--==================================================
+
 local refresh = Instance.new("TextButton")
-refresh.Size = UDim2.new(1, -30, 0, 50)
-refresh.Position = UDim2.new(0, 15, 0, 62)
-refresh.BackgroundColor3 = Color3.fromRGB(55, 120, 210)
+refresh.Size = UDim2.new(1,-30,0,48)
+refresh.Position = UDim2.new(0,15,0,57)
+refresh.BackgroundColor3 = Color3.fromRGB(55,115,205)
 refresh.Text = "Refresh Cards"
-refresh.TextColor3 = Color3.new(1, 1, 1)
+refresh.TextColor3 = Color3.new(1,1,1)
 refresh.TextSize = 16
 refresh.Font = Enum.Font.GothamBold
 refresh.Parent = main
 
 local refreshCorner = Instance.new("UICorner")
-refreshCorner.CornerRadius = UDim.new(0, 7)
+refreshCorner.CornerRadius = UDim.new(0,7)
 refreshCorner.Parent = refresh
 
--- Status
+--==================================================
+-- STATUS
+--==================================================
+
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -30, 0, 30)
-status.Position = UDim2.new(0, 15, 0, 120)
+status.Size = UDim2.new(1,-30,0,25)
+status.Position = UDim2.new(0,15,0,108)
 status.BackgroundTransparency = 1
-status.Text = "Ready"
-status.TextColor3 = Color3.fromRGB(170, 170, 170)
+status.Text = "Status: Ready"
+status.TextColor3 = Color3.fromRGB(180,180,180)
 status.TextSize = 13
 status.Font = Enum.Font.Gotham
+status.TextXAlignment = Enum.TextXAlignment.Left
 status.Parent = main
 
--- Refresh
+--==================================================
+-- LOG
+--==================================================
+
+local logBox = Instance.new("TextBox")
+logBox.Size = UDim2.new(1,-30,0,180)
+logBox.Position = UDim2.new(0,15,0,140)
+logBox.BackgroundColor3 = Color3.fromRGB(10,10,10)
+logBox.TextColor3 = Color3.fromRGB(220,220,220)
+logBox.TextSize = 12
+logBox.Font = Enum.Font.Code
+logBox.TextXAlignment = Enum.TextXAlignment.Left
+logBox.TextYAlignment = Enum.TextYAlignment.Top
+logBox.MultiLine = true
+logBox.ClearTextOnFocus = false
+logBox.TextEditable = false
+logBox.TextWrapped = false
+logBox.Text = "Click Refresh Cards để test..."
+logBox.Parent = main
+
+local logCorner = Instance.new("UICorner")
+logCorner.CornerRadius = UDim.new(0,6)
+logCorner.Parent = logBox
+
+--==================================================
+-- LOG SYSTEM
+--==================================================
+
+local logs = {}
+
+local function addLog(text)
+
+    table.insert(logs,text)
+
+    -- tối đa 5 log
+    while #logs > 5 do
+        table.remove(logs,1)
+    end
+
+    logBox.Text = table.concat(logs,"\n")
+end
+
+--==================================================
+-- FORMAT RESULT
+--==================================================
+
+local function formatValue(value, depth)
+
+    depth = depth or 0
+
+    if depth > 4 then
+        return "..."
+    end
+
+    local valueType = typeof(value)
+
+    if valueType == "string" then
+        return '"' .. value .. '"'
+
+    elseif valueType == "number"
+    or valueType == "boolean"
+    or valueType == "nil" then
+
+        return tostring(value)
+
+    elseif valueType == "Instance" then
+
+        return value:GetFullName()
+
+    elseif valueType == "table" then
+
+        local output = "{"
+
+        for key, val in pairs(value) do
+
+            output = output ..
+                "\n" ..
+                string.rep("  ",depth + 1) ..
+                "[" .. tostring(key) .. "] = " ..
+                formatValue(val,depth + 1)
+
+        end
+
+        return output ..
+            "\n" ..
+            string.rep("  ",depth) ..
+            "}"
+
+    else
+
+        return tostring(value)
+
+    end
+end
+
+--==================================================
+-- REFRESH
+--==================================================
+
+local refreshing = false
+
 refresh.MouseButton1Click:Connect(function()
 
+    if refreshing then
+        return
+    end
+
+    refreshing = true
+
     refresh.Text = "Refreshing..."
-    status.Text = "Getting conveyor info..."
+    status.Text = "Status: Getting conveyor info..."
 
     local success, result = pcall(function()
+
         return GetConveyorInfo:InvokeServer()
+
     end)
 
     if success then
-        refresh.Text = "Cards Refreshed"
-        status.Text = "Refresh completed"
 
-        print("========== REFRESH ==========")
-        print(result)
-        print("=============================")
+        refresh.Text = "Cards Refreshed"
+        status.Text = "Status: Success"
+
+        addLog("========== REFRESH ==========")
+
+        print("========== GetConveyorInfo ==========")
+        print(formatValue(result))
+        print("=====================================")
+
+        -- Hiển thị kết quả trong log
+        local formatted = formatValue(result)
+
+        for line in formatted:gmatch("[^\n]+") do
+            addLog(line)
+        end
 
     else
-        refresh.Text = "Refresh Failed"
-        status.Text = tostring(result)
 
-        warn("Refresh error:", result)
+        refresh.Text = "Refresh Failed"
+        status.Text = "Status: Failed"
+
+        addLog("ERROR: " .. tostring(result))
+
+        warn("GetConveyorInfo error:",result)
+
     end
 
     task.wait(1)
 
     refresh.Text = "Refresh Cards"
-    status.Text = "Ready"
+    status.Text = "Status: Ready"
+
+    refreshing = false
 end)
 
--- Close
+--==================================================
+-- CLOSE
+--==================================================
+
 close.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- Kéo menu
+--==================================================
+-- DRAG MENU
+--==================================================
+
 local dragging = false
 local dragStart
-local startPos
+local startPosition
 
 header.InputBegan:Connect(function(input)
 
@@ -144,12 +287,14 @@ header.InputBegan:Connect(function(input)
 
         dragging = true
         dragStart = input.Position
-        startPos = main.Position
+        startPosition = main.Position
 
         input.Changed:Connect(function()
+
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
             end
+
         end)
     end
 end)
@@ -166,10 +311,11 @@ UserInputService.InputChanged:Connect(function(input)
         local delta = input.Position - dragStart
 
         main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
+            startPosition.X.Scale,
+            startPosition.X.Offset + delta.X,
+            startPosition.Y.Scale,
+            startPosition.Y.Offset + delta.Y
         )
+
     end
 end)
