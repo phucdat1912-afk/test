@@ -1,67 +1,121 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local Player = Players.LocalPlayer
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 -- Xóa UI cũ
-pcall(function()
-    local old = playerGui:FindFirstChild("RefreshTest")
-    if old then
-        old:Destroy()
-    end
-end)
+local old = Player.PlayerGui:FindFirstChild("ConveyorEventSpy")
+if old then
+    old:Destroy()
+end
 
--- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "RefreshTest"
+gui.Name = "ConveyorEventSpy"
 gui.ResetOnSpawn = false
-gui.Parent = playerGui
+gui.Parent = Player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 120)
-frame.Position = UDim2.new(0.5, -125, 0.5, -60)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Size = UDim2.new(0, 600, 0, 400)
+frame.Position = UDim2.new(0.5, -300, 0.5, -200)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
 frame.Parent = gui
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 35)
-title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-title.Text = "Refresh Test"
-title.TextColor3 = Color3.new(1,1,1)
-title.TextSize = 16
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+title.Text = "CONVEYOR EVENT SPY"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 18
 title.Parent = frame
 
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(1, -20, 0, 45)
-button.Position = UDim2.new(0, 10, 0, 55)
-button.BackgroundColor3 = Color3.fromRGB(50, 120, 210)
-button.Text = "REFRESH CARDS"
-button.TextColor3 = Color3.new(1,1,1)
-button.TextSize = 16
-button.Parent = frame
+local log = Instance.new("TextLabel")
+log.Position = UDim2.new(0, 10, 0, 50)
+log.Size = UDim2.new(1, -20, 1, -60)
+log.BackgroundTransparency = 1
+log.TextColor3 = Color3.new(1, 1, 1)
+log.TextSize = 14
+log.Font = Enum.Font.Code
+log.TextXAlignment = Enum.TextXAlignment.Left
+log.TextYAlignment = Enum.TextYAlignment.Top
+log.TextWrapped = false
+log.Text = "Đang chờ event...\n\nBấm Refresh trong game."
+log.Parent = frame
 
-button.MouseButton1Click:Connect(function()
+local lines = {}
 
-    button.Text = "Refreshing..."
+local function addLog(text)
+    table.insert(lines, text)
 
-    local remote = ReplicatedStorage
-        :WaitForChild("Remotes")
-        :WaitForChild("GetConveyorInfo")
-
-    local success, result = pcall(function()
-        return remote:InvokeServer()
-    end)
-
-    if success then
-        button.Text = "SUCCESS"
-        print("GetConveyorInfo:", result)
-    else
-        button.Text = "FAILED"
-        warn("GetConveyorInfo:", result)
+    while #lines > 25 do
+        table.remove(lines, 1)
     end
 
-    task.wait(1)
+    log.Text = table.concat(lines, "\n")
+end
 
-    button.Text = "REFRESH CARDS"
-end)
+local function dumpValue(value, indent)
+    indent = indent or ""
+
+    local result = {}
+
+    if typeof(value) == "table" then
+        for k, v in pairs(value) do
+            local valueText
+
+            if typeof(v) == "table" then
+                valueText = "{table}"
+            else
+                valueText = tostring(v)
+            end
+
+            table.insert(
+                result,
+                indent .. tostring(k) .. " = " .. valueText
+            )
+        end
+    else
+        table.insert(result, indent .. tostring(value))
+    end
+
+    return table.concat(result, "\n")
+end
+
+local watchList = {
+    "ConveyorCardEvent",
+    "ConveyorVisuals",
+    "ConveyorLevelChanged",
+    "RecoverPackUpdated",
+    "AutoRollAnnouncement",
+    "StatsRollAnnouncement",
+    "TraitRollAnnouncement"
+}
+
+for _, remoteName in ipairs(watchList) do
+    local remote = Remotes:FindFirstChild(remoteName)
+
+    if remote and remote:IsA("RemoteEvent") then
+
+        addLog("[LISTENING] " .. remoteName)
+
+        remote.OnClientEvent:Connect(function(...)
+            local args = {...}
+
+            addLog("")
+            addLog("========== " .. remoteName .. " ==========")
+            addLog("ARGS: " .. #args)
+
+            for i, value in ipairs(args) do
+                addLog(
+                    "[" .. i .. "] "
+                    .. "TYPE=" .. typeof(value)
+                    .. " VALUE=" .. dumpValue(value, "    ")
+                )
+            end
+        end)
+    end
+end
+
+addLog("")
+addLog("READY - Bấm Refresh trong game.")
