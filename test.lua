@@ -82,138 +82,14 @@ MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = Main
 
 --==================================================
--- SHOW HUB BUTTON
---==================================================
-
-local ShowHubButton = Instance.new("TextButton")
-ShowHubButton.Name = "ShowHubButton"
-ShowHubButton.Size = UDim2.new(0, 75, 0, 35)
-ShowHubButton.Position = UDim2.new(0, 15, 0.5, -18)
-ShowHubButton.BackgroundColor3 = BG
-ShowHubButton.BorderSizePixel = 0
-ShowHubButton.Text = "1tap"
-ShowHubButton.TextColor3 = TEXT
-ShowHubButton.TextSize = 13
-ShowHubButton.Font = Enum.Font.GothamBold
-ShowHubButton.AutoButtonColor = false
-ShowHubButton.Visible = false
-ShowHubButton.ZIndex = 100
-ShowHubButton.Parent = Gui
-
-local ShowHubCorner = Instance.new("UICorner")
-ShowHubCorner.CornerRadius = UDim.new(0, 8)
-ShowHubCorner.Parent = ShowHubButton
-
---==================================================
--- HIDE / SHOW HUB
---==================================================
-
-local HideHubButton = Instance.new("TextButton")
-HideHubButton.Name = "HideHubButton"
-HideHubButton.Size = UDim2.new(0, 32, 0, 32)
-HideHubButton.Position = UDim2.new(1, -42, 0, 9)
-HideHubButton.BackgroundColor3 = PANEL
-HideHubButton.BorderSizePixel = 0
-HideHubButton.Text = "—"
-HideHubButton.TextColor3 = TEXT
-HideHubButton.TextSize = 16
-HideHubButton.Font = Enum.Font.GothamBold
-HideHubButton.AutoButtonColor = false
-HideHubButton.ZIndex = 20
-HideHubButton.Parent = Main
-
-local HideCorner = Instance.new("UICorner")
-HideCorner.CornerRadius = UDim.new(0, 7)
-HideCorner.Parent = HideHubButton
-
-HideHubButton.MouseEnter:Connect(function()
-    HideHubButton.BackgroundColor3 = SELECTED
-end)
-
-HideHubButton.MouseLeave:Connect(function()
-    HideHubButton.BackgroundColor3 = PANEL
-end)
-
-HideHubButton.Activated:Connect(function()
-    Main.Visible = false
-    ShowHubButton.Visible = true
-end)
-
-ShowHubButton.MouseEnter:Connect(function()
-    ShowHubButton.BackgroundColor3 = SELECTED
-end)
-
-ShowHubButton.MouseLeave:Connect(function()
-    ShowHubButton.BackgroundColor3 = BG
-end)
-
-ShowHubButton.Activated:Connect(function()
-    Main.Visible = true
-    ShowHubButton.Visible = false
-end)
-
---==================================================
--- SHOW BUTTON DRAG
---==================================================
-
-local ShowDragging = false
-local ShowDragStart
-local ShowStartPosition
-
-ShowHubButton.InputBegan:Connect(function(Input)
-
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
-
-        ShowDragging = true
-        ShowDragStart = Input.Position
-        ShowStartPosition = ShowHubButton.Position
-
-    end
-
-end)
-
-UserInputService.InputChanged:Connect(function(Input)
-
-    if not ShowDragging then
-        return
-    end
-
-    if Input.UserInputType == Enum.UserInputType.MouseMovement
-        or Input.UserInputType == Enum.UserInputType.Touch then
-
-        local Delta = Input.Position - ShowDragStart
-
-        ShowHubButton.Position = UDim2.new(
-            ShowStartPosition.X.Scale,
-            ShowStartPosition.X.Offset + Delta.X,
-            ShowStartPosition.Y.Scale,
-            ShowStartPosition.Y.Offset + Delta.Y
-        )
-
-    end
-
-end)
-
-UserInputService.InputEnded:Connect(function(Input)
-
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
-
-        ShowDragging = false
-
-    end
-
-end)
-
---==================================================
 -- TOP BAR
 --==================================================
 
 local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
 TopBar.Size = UDim2.new(1, 0, 0, 50)
 TopBar.BackgroundTransparency = 1
-TopBar.ZIndex = 5
+TopBar.ZIndex = 50
 TopBar.Parent = Main
 
 local Title = Instance.new("TextLabel")
@@ -225,11 +101,94 @@ Title.TextColor3 = TEXT
 Title.TextSize = 18
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.ZIndex = 6
+Title.ZIndex = 51
 Title.Parent = TopBar
 
 --==================================================
--- DRAG
+-- HIDE HUB BUTTON
+--==================================================
+
+local HideHubButton = Instance.new("TextButton")
+HideHubButton.Name = "HideHubButton"
+HideHubButton.Size = UDim2.new(0, 85, 0, 30)
+HideHubButton.Position = UDim2.new(1, -95, 0, 10)
+HideHubButton.BackgroundColor3 = PANEL
+HideHubButton.BorderSizePixel = 0
+HideHubButton.Text = "HIDE HUB"
+HideHubButton.TextColor3 = TEXT
+HideHubButton.TextSize = 11
+HideHubButton.Font = Enum.Font.GothamBold
+HideHubButton.AutoButtonColor = false
+HideHubButton.Active = true
+HideHubButton.Selectable = true
+HideHubButton.ZIndex = 60
+HideHubButton.Parent = TopBar
+
+local HideCorner = Instance.new("UICorner")
+HideCorner.CornerRadius = UDim.new(0, 7)
+HideCorner.Parent = HideHubButton
+
+--==================================================
+-- SHOW HUB BUTTON
+--==================================================
+
+local ShowHubButton = Instance.new("TextButton")
+ShowHubButton.Name = "ShowHubButton"
+ShowHubButton.Size = UDim2.new(0, 90, 0, 36)
+ShowHubButton.Position = UDim2.new(0, 15, 0.5, -18)
+ShowHubButton.BackgroundColor3 = BG
+ShowHubButton.BorderSizePixel = 0
+ShowHubButton.Text = "SHOW HUB"
+ShowHubButton.TextColor3 = TEXT
+ShowHubButton.TextSize = 11
+ShowHubButton.Font = Enum.Font.GothamBold
+ShowHubButton.AutoButtonColor = false
+ShowHubButton.Active = true
+ShowHubButton.Selectable = true
+ShowHubButton.Visible = false
+ShowHubButton.ZIndex = 100
+ShowHubButton.Parent = Gui
+
+local ShowCorner = Instance.new("UICorner")
+ShowCorner.CornerRadius = UDim.new(0, 8)
+ShowCorner.Parent = ShowHubButton
+
+--==================================================
+-- HIDE / SHOW
+--==================================================
+
+HideHubButton.MouseEnter:Connect(function()
+    HideHubButton.BackgroundColor3 = SELECTED
+end)
+
+HideHubButton.MouseLeave:Connect(function()
+    HideHubButton.BackgroundColor3 = PANEL
+end)
+
+ShowHubButton.MouseEnter:Connect(function()
+    ShowHubButton.BackgroundColor3 = SELECTED
+end)
+
+ShowHubButton.MouseLeave:Connect(function()
+    ShowHubButton.BackgroundColor3 = BG
+end)
+
+HideHubButton.Activated:Connect(function()
+
+    Main.Visible = false
+    ShowHubButton.Visible = true
+
+end)
+
+ShowHubButton.Activated:Connect(function()
+
+    Main.Visible = true
+    ShowHubButton.Visible = false
+
+end)
+
+--==================================================
+-- DRAG MAIN
 --==================================================
 
 local Dragging = false
@@ -240,6 +199,11 @@ TopBar.InputBegan:Connect(function(Input)
 
     if Input.UserInputType == Enum.UserInputType.MouseButton1
         or Input.UserInputType == Enum.UserInputType.Touch then
+
+        -- Do not start dragging when clicking the HIDE HUB button
+        if Input.Target == HideHubButton then
+            return
+        end
 
         Dragging = true
         DragStart = Input.Position
@@ -543,6 +507,9 @@ CreateLabel(
     UDim2.new(0, 0, 0, 0),
     UDim2.new(1, 0, 0, 35)
 )
+
+-- Clear Logs stays inside LOGS page
+-- It is independent from the HIDE HUB button.
 
 local ClearLogsButton = CreateButton(
     LogsPage,
