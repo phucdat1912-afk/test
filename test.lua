@@ -664,7 +664,7 @@ local function BuyAndRoll()
         end
     end
 
-    AddLog("Skipped: Pack không được chọn")
+    AddLog("Skip")
 
 end
 
