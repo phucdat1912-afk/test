@@ -1,5 +1,5 @@
 --==================================================
--- PACK AUTO FARM - OUROBOROS STYLE UI
+-- 1TAP PACK AUTO FARM
 --==================================================
 
 local Players = game:GetService("Players")
@@ -20,13 +20,14 @@ local SetRecoverPack = Remotes:WaitForChild("SetRecoverPack")
 
 local Running = false
 local Delay = 1.5
+local AntiAFK = true
 
 local AllowedPacks = {
     ["HSR Pack"] = true,
     ["Eternity Pack"] = true
 }
 
-local AntiAFK = true
+local MAX_LOGS = 5
 
 --==================================================
 -- ANTI AFK
@@ -40,18 +41,23 @@ Player.Idled:Connect(function()
 end)
 
 --==================================================
--- GUI
+-- GUI CLEANUP
 --==================================================
 
 local CoreGui = game:GetService("CoreGui")
 
-local OldGui = CoreGui:FindFirstChild("OuroborosPackFarm")
+local OldGui = CoreGui:FindFirstChild("1tap")
+
 if OldGui then
     OldGui:Destroy()
 end
 
+--==================================================
+-- GUI
+--==================================================
+
 local Gui = Instance.new("ScreenGui")
-Gui.Name = "OuroborosPackFarm"
+Gui.Name = "1tap"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.Parent = CoreGui
@@ -65,8 +71,10 @@ local SIDEBAR = Color3.fromRGB(14, 14, 18)
 local PANEL = Color3.fromRGB(24, 24, 29)
 local PANEL2 = Color3.fromRGB(30, 30, 36)
 local BUTTON = Color3.fromRGB(36, 36, 43)
+
 local TEXT = Color3.fromRGB(235, 235, 240)
 local SUBTEXT = Color3.fromRGB(145, 145, 155)
+
 local ACCENT = Color3.fromRGB(120, 90, 255)
 local GREEN = Color3.fromRGB(65, 190, 105)
 local RED = Color3.fromRGB(210, 65, 75)
@@ -76,6 +84,7 @@ local RED = Color3.fromRGB(210, 65, 75)
 --==================================================
 
 local Main = Instance.new("Frame")
+Main.Name = "Main"
 Main.Size = UDim2.new(0, 650, 0, 430)
 Main.Position = UDim2.new(0.5, -325, 0.5, -215)
 Main.BackgroundColor3 = BG
@@ -96,26 +105,30 @@ TopBar.BackgroundTransparency = 1
 TopBar.Parent = Main
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 220, 1, 0)
+Title.Size = UDim2.new(0, 100, 1, 0)
 Title.Position = UDim2.new(0, 18, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "OUROBOROS"
+Title.Text = "1tap"
 Title.TextColor3 = TEXT
-Title.TextSize = 17
+Title.TextSize = 18
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
 local SubTitle = Instance.new("TextLabel")
-SubTitle.Size = UDim2.new(0, 200, 1, 0)
-SubTitle.Position = UDim2.new(0, 125, 0, 0)
+SubTitle.Size = UDim2.new(0, 150, 1, 0)
+SubTitle.Position = UDim2.new(0, 62, 0, 0)
 SubTitle.BackgroundTransparency = 1
-SubTitle.Text = "PACK FARM"
+SubTitle.Text = "AUTO FARM"
 SubTitle.TextColor3 = ACCENT
-SubTitle.TextSize = 11
+SubTitle.TextSize = 10
 SubTitle.Font = Enum.Font.GothamBold
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
 SubTitle.Parent = TopBar
+
+--==================================================
+-- MINIMIZE
+--==================================================
 
 local Minimize = Instance.new("TextButton")
 Minimize.Size = UDim2.new(0, 35, 0, 35)
@@ -125,11 +138,16 @@ Minimize.Text = "—"
 Minimize.TextColor3 = TEXT
 Minimize.TextSize = 18
 Minimize.Font = Enum.Font.GothamBold
+Minimize.AutoButtonColor = false
 Minimize.Parent = TopBar
 
 local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 7)
 MinCorner.Parent = Minimize
+
+--==================================================
+-- CLOSE
+--==================================================
 
 local Close = Instance.new("TextButton")
 Close.Size = UDim2.new(0, 35, 0, 35)
@@ -139,6 +157,7 @@ Close.Text = "×"
 Close.TextColor3 = TEXT
 Close.TextSize = 20
 Close.Font = Enum.Font.GothamBold
+Close.AutoButtonColor = false
 Close.Parent = TopBar
 
 local CloseCorner = Instance.new("UICorner")
@@ -156,20 +175,20 @@ Sidebar.BackgroundColor3 = SIDEBAR
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Main
 
-local SideCorner = Instance.new("UICorner")
-SideCorner.CornerRadius = UDim.new(0, 10)
-SideCorner.Parent = Sidebar
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 10)
+SidebarCorner.Parent = Sidebar
 
-local SideTitle = Instance.new("TextLabel")
-SideTitle.Size = UDim2.new(1, -20, 0, 25)
-SideTitle.Position = UDim2.new(0, 10, 0, 15)
-SideTitle.BackgroundTransparency = 1
-SideTitle.Text = "MENU"
-SideTitle.TextColor3 = SUBTEXT
-SideTitle.TextSize = 10
-SideTitle.Font = Enum.Font.GothamBold
-SideTitle.TextXAlignment = Enum.TextXAlignment.Left
-SideTitle.Parent = Sidebar
+local MenuTitle = Instance.new("TextLabel")
+MenuTitle.Size = UDim2.new(1, -20, 0, 25)
+MenuTitle.Position = UDim2.new(0, 10, 0, 15)
+MenuTitle.BackgroundTransparency = 1
+MenuTitle.Text = "MENU"
+MenuTitle.TextColor3 = SUBTEXT
+MenuTitle.TextSize = 10
+MenuTitle.Font = Enum.Font.GothamBold
+MenuTitle.TextXAlignment = Enum.TextXAlignment.Left
+MenuTitle.Parent = Sidebar
 
 --==================================================
 -- CONTENT
@@ -187,17 +206,22 @@ Content.Parent = Main
 
 local Tabs = {}
 local Pages = {}
+local CurrentTab
 
-local function CreateTab(name, text, y)
+local function CreateTab(Name, Text, Y)
+
     local Button = Instance.new("TextButton")
+    Button.Name = Name .. "Tab"
     Button.Size = UDim2.new(1, -20, 0, 38)
-    Button.Position = UDim2.new(0, 10, 0, y)
+    Button.Position = UDim2.new(0, 10, 0, Y)
     Button.BackgroundColor3 = SIDEBAR
-    Button.Text = text
+    Button.BorderSizePixel = 0
+    Button.Text = Text
     Button.TextColor3 = SUBTEXT
     Button.TextSize = 13
     Button.Font = Enum.Font.GothamMedium
     Button.TextXAlignment = Enum.TextXAlignment.Left
+    Button.AutoButtonColor = false
     Button.Parent = Sidebar
 
     local Padding = Instance.new("UIPadding")
@@ -209,36 +233,83 @@ local function CreateTab(name, text, y)
     Corner.Parent = Button
 
     local Page = Instance.new("Frame")
+    Page.Name = Name .. "Page"
     Page.Size = UDim2.new(1, -30, 1, -25)
     Page.Position = UDim2.new(0, 15, 0, 15)
     Page.BackgroundTransparency = 1
     Page.Visible = false
     Page.Parent = Content
 
-    Tabs[name] = Button
-    Pages[name] = Page
+    Tabs[Name] = Button
+    Pages[Name] = Page
 
     return Button, Page
 end
 
-local FarmTab, FarmPage = CreateTab("Farm", "  Farm", 50)
-local SettingsTab, SettingsPage = CreateTab("Settings", "  Settings", 95)
-local LogsTab, LogsPage = CreateTab("Logs", "  Logs", 140)
+local FarmTab, FarmPage =
+    CreateTab("Farm", "  Farm", 50)
 
-local function SelectTab(name)
-    for tabName, button in pairs(Tabs) do
-        if tabName == name then
-            button.BackgroundColor3 = PANEL2
-            button.TextColor3 = TEXT
+local SettingsTab, SettingsPage =
+    CreateTab("Settings", "  Settings", 95)
+
+local LogsTab, LogsPage =
+    CreateTab("Logs", "  Logs", 140)
+
+local function SelectTab(Name)
+
+    if not Tabs[Name] then
+        return
+    end
+
+    CurrentTab = Name
+
+    for TabName, Button in pairs(Tabs) do
+
+        if TabName == Name then
+            Button.BackgroundColor3 = PANEL2
+            Button.TextColor3 = TEXT
         else
-            button.BackgroundColor3 = SIDEBAR
-            button.TextColor3 = SUBTEXT
+            Button.BackgroundColor3 = SIDEBAR
+            Button.TextColor3 = SUBTEXT
         end
+
     end
 
-    for pageName, page in pairs(Pages) do
-        page.Visible = pageName == name
+    for PageName, Page in pairs(Pages) do
+        Page.Visible = PageName == Name
     end
+end
+
+FarmTab.MouseButton1Click:Connect(function()
+    SelectTab("Farm")
+end)
+
+SettingsTab.MouseButton1Click:Connect(function()
+    SelectTab("Settings")
+end)
+
+LogsTab.MouseButton1Click:Connect(function()
+    SelectTab("Logs")
+end)
+
+for Name, Button in pairs(Tabs) do
+
+    Button.MouseEnter:Connect(function()
+
+        if CurrentTab ~= Name then
+            Button.BackgroundColor3 = BUTTON
+        end
+
+    end)
+
+    Button.MouseLeave:Connect(function()
+
+        if CurrentTab ~= Name then
+            Button.BackgroundColor3 = SIDEBAR
+        end
+
+    end)
+
 end
 
 --==================================================
@@ -255,18 +326,20 @@ FarmTitle.Font = Enum.Font.GothamBold
 FarmTitle.TextXAlignment = Enum.TextXAlignment.Left
 FarmTitle.Parent = FarmPage
 
-local FarmDesc = Instance.new("TextLabel")
-FarmDesc.Size = UDim2.new(1, 0, 0, 25)
-FarmDesc.Position = UDim2.new(0, 0, 0, 30)
-FarmDesc.BackgroundTransparency = 1
-FarmDesc.Text = "Automatically buy and recover selected packs."
-FarmDesc.TextColor3 = SUBTEXT
-FarmDesc.TextSize = 12
-FarmDesc.Font = Enum.Font.Gotham
-FarmDesc.TextXAlignment = Enum.TextXAlignment.Left
-FarmDesc.Parent = FarmPage
+local FarmDescription = Instance.new("TextLabel")
+FarmDescription.Size = UDim2.new(1, 0, 0, 25)
+FarmDescription.Position = UDim2.new(0, 0, 0, 30)
+FarmDescription.BackgroundTransparency = 1
+FarmDescription.Text = "Automatically buy and recover selected packs."
+FarmDescription.TextColor3 = SUBTEXT
+FarmDescription.TextSize = 12
+FarmDescription.Font = Enum.Font.Gotham
+FarmDescription.TextXAlignment = Enum.TextXAlignment.Left
+FarmDescription.Parent = FarmPage
 
--- STATUS CARD
+--==================================================
+-- STATUS
+--==================================================
 
 local StatusCard = Instance.new("Frame")
 StatusCard.Size = UDim2.new(1, 0, 0, 75)
@@ -279,20 +352,20 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 8)
 StatusCorner.Parent = StatusCard
 
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.5, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0, 15, 0, 10)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "STATUS"
-StatusLabel.TextColor3 = SUBTEXT
-StatusLabel.TextSize = 10
-StatusLabel.Font = Enum.Font.GothamBold
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatusLabel.Parent = StatusCard
+local StatusTitle = Instance.new("TextLabel")
+StatusTitle.Size = UDim2.new(0.5, 0, 0, 20)
+StatusTitle.Position = UDim2.new(0, 15, 0, 9)
+StatusTitle.BackgroundTransparency = 1
+StatusTitle.Text = "STATUS"
+StatusTitle.TextColor3 = SUBTEXT
+StatusTitle.TextSize = 10
+StatusTitle.Font = Enum.Font.GothamBold
+StatusTitle.TextXAlignment = Enum.TextXAlignment.Left
+StatusTitle.Parent = StatusCard
 
 local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(0.5, 0, 0, 25)
-Status.Position = UDim2.new(0, 15, 0, 32)
+Status.Position = UDim2.new(0, 15, 0, 31)
 Status.BackgroundTransparency = 1
 Status.Text = "●  OFF"
 Status.TextColor3 = RED
@@ -309,13 +382,16 @@ Toggle.Text = "START"
 Toggle.TextColor3 = TEXT
 Toggle.TextSize = 13
 Toggle.Font = Enum.Font.GothamBold
+Toggle.AutoButtonColor = false
 Toggle.Parent = StatusCard
 
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 7)
 ToggleCorner.Parent = Toggle
 
--- PACK CARDS
+--==================================================
+-- PACK FILTER
+--==================================================
 
 local PackTitle = Instance.new("TextLabel")
 PackTitle.Size = UDim2.new(1, 0, 0, 25)
@@ -328,12 +404,15 @@ PackTitle.Font = Enum.Font.GothamBold
 PackTitle.TextXAlignment = Enum.TextXAlignment.Left
 PackTitle.Parent = FarmPage
 
-local function CreatePackButton(text, packName, x)
+local function CreatePackButton(Text, PackName, X)
+
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(0.5, -7, 0, 55)
-    Button.Position = UDim2.new(x, 0, 0, 190)
+    Button.Position = UDim2.new(X, 0, 0, 190)
     Button.BackgroundColor3 = PANEL
+    Button.BorderSizePixel = 0
     Button.Text = ""
+    Button.AutoButtonColor = false
     Button.Parent = FarmPage
 
     local Corner = Instance.new("UICorner")
@@ -344,7 +423,7 @@ local function CreatePackButton(text, packName, x)
     Label.Size = UDim2.new(1, -20, 0, 25)
     Label.Position = UDim2.new(0, 10, 0, 7)
     Label.BackgroundTransparency = 1
-    Label.Text = text
+    Label.Text = Text
     Label.TextColor3 = TEXT
     Label.TextSize = 13
     Label.Font = Enum.Font.GothamBold
@@ -363,18 +442,24 @@ local function CreatePackButton(text, packName, x)
     State.Parent = Button
 
     Button.MouseButton1Click:Connect(function()
-        AllowedPacks[packName] = not AllowedPacks[packName]
 
-        if AllowedPacks[packName] then
+        AllowedPacks[PackName] =
+            not AllowedPacks[PackName]
+
+        if AllowedPacks[PackName] then
+
             State.Text = "● ENABLED"
             State.TextColor3 = GREEN
+
         else
+
             State.Text = "● DISABLED"
             State.TextColor3 = RED
+
         end
+
     end)
 
-    return Button
 end
 
 CreatePackButton("HSR Pack", "HSR Pack", 0)
@@ -405,21 +490,22 @@ DelayLabel.Font = Enum.Font.GothamBold
 DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
 DelayLabel.Parent = SettingsPage
 
-local DelayDesc = Instance.new("TextLabel")
-DelayDesc.Size = UDim2.new(1, 0, 0, 20)
-DelayDesc.Position = UDim2.new(0, 0, 0, 78)
-DelayDesc.BackgroundTransparency = 1
-DelayDesc.Text = "Time between each farm cycle."
-DelayDesc.TextColor3 = SUBTEXT
-DelayDesc.TextSize = 11
-DelayDesc.Font = Enum.Font.Gotham
-DelayDesc.TextXAlignment = Enum.TextXAlignment.Left
-DelayDesc.Parent = SettingsPage
+local DelayDescription = Instance.new("TextLabel")
+DelayDescription.Size = UDim2.new(1, 0, 0, 20)
+DelayDescription.Position = UDim2.new(0, 0, 0, 78)
+DelayDescription.BackgroundTransparency = 1
+DelayDescription.Text = "Time between each farm cycle."
+DelayDescription.TextColor3 = SUBTEXT
+DelayDescription.TextSize = 11
+DelayDescription.Font = Enum.Font.Gotham
+DelayDescription.TextXAlignment = Enum.TextXAlignment.Left
+DelayDescription.Parent = SettingsPage
 
 local DelayBox = Instance.new("TextBox")
 DelayBox.Size = UDim2.new(0, 130, 0, 38)
 DelayBox.Position = UDim2.new(0, 0, 0, 105)
 DelayBox.BackgroundColor3 = PANEL
+DelayBox.BorderSizePixel = 0
 DelayBox.Text = tostring(Delay)
 DelayBox.TextColor3 = TEXT
 DelayBox.TextSize = 13
@@ -432,22 +518,28 @@ DelayCorner.CornerRadius = UDim.new(0, 7)
 DelayCorner.Parent = DelayBox
 
 DelayBox.FocusLost:Connect(function()
-    local value = tonumber(DelayBox.Text)
 
-    if value and value >= 0 then
-        Delay = value
+    local Value = tonumber(DelayBox.Text)
+
+    if Value and Value >= 0 then
+        Delay = Value
     else
         DelayBox.Text = tostring(Delay)
     end
+
 end)
 
--- ANTI AFK
+--==================================================
+-- ANTI AFK SETTING
+--==================================================
 
 local AFKButton = Instance.new("TextButton")
 AFKButton.Size = UDim2.new(1, 0, 0, 55)
 AFKButton.Position = UDim2.new(0, 0, 0, 165)
 AFKButton.BackgroundColor3 = PANEL
+AFKButton.BorderSizePixel = 0
 AFKButton.Text = ""
+AFKButton.AutoButtonColor = false
 AFKButton.Parent = SettingsPage
 
 local AFKCorner = Instance.new("UICorner")
@@ -477,15 +569,21 @@ AFKState.TextXAlignment = Enum.TextXAlignment.Left
 AFKState.Parent = AFKButton
 
 AFKButton.MouseButton1Click:Connect(function()
+
     AntiAFK = not AntiAFK
 
     if AntiAFK then
+
         AFKState.Text = "● ENABLED"
         AFKState.TextColor3 = GREEN
+
     else
+
         AFKState.Text = "● DISABLED"
         AFKState.TextColor3 = RED
+
     end
+
 end)
 
 --==================================================
@@ -533,10 +631,12 @@ local ClearButton = Instance.new("TextButton")
 ClearButton.Size = UDim2.new(0, 120, 0, 35)
 ClearButton.Position = UDim2.new(1, -120, 1, -40)
 ClearButton.BackgroundColor3 = BUTTON
+ClearButton.BorderSizePixel = 0
 ClearButton.Text = "CLEAR LOG"
 ClearButton.TextColor3 = TEXT
 ClearButton.TextSize = 11
 ClearButton.Font = Enum.Font.GothamBold
+ClearButton.AutoButtonColor = false
 ClearButton.Parent = LogsPage
 
 local ClearCorner = Instance.new("UICorner")
@@ -548,51 +648,63 @@ ClearCorner.Parent = ClearButton
 --==================================================
 
 local Logs = {}
-local MAX_LOGS = 5
 
 local function RefreshLog()
+
     LogText.Text = table.concat(Logs, "\n")
 
     task.defer(function()
-        local height = LogText.AbsoluteSize.Y + 20
+
+        local Height = LogText.AbsoluteSize.Y + 20
 
         LogFrame.CanvasSize = UDim2.new(
             0,
             0,
             0,
-            height
+            Height
         )
 
         LogFrame.CanvasPosition = Vector2.new(
             0,
             math.max(
                 0,
-                height - LogFrame.AbsoluteSize.Y
+                Height - LogFrame.AbsoluteSize.Y
             )
         )
+
     end)
+
 end
 
 local function ClearLogs()
+
     table.clear(Logs)
+
     LogText.Text = ""
-    LogFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    LogFrame.CanvasPosition = Vector2.new(0, 0)
+
+    LogFrame.CanvasSize =
+        UDim2.new(0, 0, 0, 0)
+
+    LogFrame.CanvasPosition =
+        Vector2.new(0, 0)
+
 end
 
-local function AddLog(message)
-    local time = os.date("%H:%M:%S")
+local function AddLog(Message)
 
     if #Logs >= MAX_LOGS then
         ClearLogs()
     end
 
+    local Time = os.date("%H:%M:%S")
+
     table.insert(
         Logs,
-        "[" .. time .. "] " .. tostring(message)
+        "[" .. Time .. "] " .. tostring(Message)
     )
 
     RefreshLog()
+
 end
 
 ClearButton.MouseButton1Click:Connect(function()
@@ -605,79 +717,104 @@ end)
 
 local function BuyAndRoll()
 
-    local success, result = pcall(function()
+    local Success, Result = pcall(function()
+
         return RequestConveyorOffer:InvokeServer(1)
+
     end)
 
-    if not success or typeof(result) ~= "table" then
+    if not Success or typeof(Result) ~= "table" then
+
         AddLog("ERROR: Cannot get offer")
+
         return
+
     end
 
-    for _, offer in pairs(result) do
+    for _, Offer in pairs(Result) do
 
-        if typeof(offer) ~= "table" then
+        if typeof(Offer) ~= "table" then
             continue
         end
 
-        local offerId = offer.OfferId
-        local packName = offer.PackName
-        local mutation = offer.Mutation
+        local OfferId = Offer.OfferId
+        local PackName = Offer.PackName
+        local Mutation = Offer.Mutation
 
         AddLog(
             "Offer: "
-            .. tostring(packName)
+            .. tostring(PackName)
             .. " | "
-            .. tostring(mutation)
+            .. tostring(Mutation)
         )
 
-        if AllowedPacks[packName] then
+        if AllowedPacks[PackName] then
 
             AddLog(
                 "Buying: "
-                .. tostring(packName)
+                .. tostring(PackName)
             )
 
-            local buySuccess = pcall(function()
+            local BuySuccess = pcall(function()
+
                 BuyPack:FireServer(
-                    packName,
-                    mutation,
-                    offerId
+                    PackName,
+                    Mutation,
+                    OfferId
                 )
+
             end)
 
-            if not buySuccess then
+            if not BuySuccess then
+
                 AddLog("ERROR: BuyPack")
+
                 return
+
             end
 
             AddLog(
                 "Bought: "
-                .. tostring(packName)
+                .. tostring(PackName)
             )
 
             task.wait(0.5)
 
-            local rollSuccess = pcall(function()
-                SetRecoverPack:FireServer(offerId)
+            local RollSuccess = pcall(function()
+
+                SetRecoverPack:FireServer(
+                    OfferId
+                )
+
             end)
 
-            if rollSuccess then
+            if RollSuccess then
+
                 AddLog(
                     "ROLLED: "
-                    .. tostring(packName)
+                    .. tostring(PackName)
                     .. " | "
-                    .. tostring(mutation)
+                    .. tostring(Mutation)
                 )
+
             else
-                AddLog("ERROR: SetRecoverPack")
+
+                AddLog(
+                    "ERROR: SetRecoverPack"
+                )
+
             end
 
             return
+
         end
+
     end
 
-    AddLog("Skipped: No selected pack")
+    AddLog(
+        "Skipped: No selected pack"
+    )
+
 end
 
 --==================================================
@@ -686,13 +823,18 @@ end
 
 task.spawn(function()
 
-    while true do
+    while Gui.Parent do
 
         if Running then
+
             BuyAndRoll()
+
             task.wait(Delay)
+
         else
+
             task.wait(0.2)
+
         end
 
     end
@@ -739,18 +881,18 @@ local Dragging = false
 local DragStart
 local StartPosition
 
-TopBar.InputBegan:Connect(function(input)
+TopBar.InputBegan:Connect(function(Input)
 
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
+    if Input.UserInputType == Enum.UserInputType.MouseButton1
+    or Input.UserInputType == Enum.UserInputType.Touch then
 
         Dragging = true
-        DragStart = input.Position
+        DragStart = Input.Position
         StartPosition = Main.Position
 
-        input.Changed:Connect(function()
+        Input.Changed:Connect(function()
 
-            if input.UserInputState == Enum.UserInputState.End then
+            if Input.UserInputState == Enum.UserInputState.End then
                 Dragging = false
             end
 
@@ -760,23 +902,25 @@ TopBar.InputBegan:Connect(function(input)
 
 end)
 
-UserInputService.InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(Input)
 
-    if Dragging and (
-        input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch
-    ) then
-
-        local Delta = input.Position - DragStart
-
-        Main.Position = UDim2.new(
-            StartPosition.X.Scale,
-            StartPosition.X.Offset + Delta.X,
-            StartPosition.Y.Scale,
-            StartPosition.Y.Offset + Delta.Y
-        )
-
+    if not Dragging then
+        return
     end
+
+    if Input.UserInputType ~= Enum.UserInputType.MouseMovement
+    and Input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local Delta = Input.Position - DragStart
+
+    Main.Position = UDim2.new(
+        StartPosition.X.Scale,
+        StartPosition.X.Offset + Delta.X,
+        StartPosition.Y.Scale,
+        StartPosition.Y.Offset + Delta.Y
+    )
 
 end)
 
@@ -794,9 +938,23 @@ Minimize.MouseButton1Click:Connect(function()
     Content.Visible = not Minimized
 
     if Minimized then
-        Main.Size = UDim2.new(0, 650, 0, 45)
+
+        Main.Size = UDim2.new(
+            0,
+            650,
+            0,
+            45
+        )
+
     else
-        Main.Size = UDim2.new(0, 650, 0, 430)
+
+        Main.Size = UDim2.new(
+            0,
+            650,
+            0,
+            430
+        )
+
     end
 
 end)
@@ -806,14 +964,17 @@ end)
 --==================================================
 
 Close.MouseButton1Click:Connect(function()
+
     Running = false
     Gui:Destroy()
+
 end)
 
 --==================================================
--- DEFAULT TAB
+-- STARTUP
 --==================================================
 
 SelectTab("Farm")
-AddLog("UI Loaded")
+
+AddLog("1tap loaded")
 AddLog("Anti-AFK: Enabled")
