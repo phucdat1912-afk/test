@@ -3,6 +3,7 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 
 local Player = Players.LocalPlayer
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -18,6 +19,11 @@ local SetRecoverPack = Remotes:WaitForChild("SetRecoverPack")
 local Running = false
 local AntiAFK = true
 local Delay = 1.5
+
+local AutoLoadSettings = true
+local AutoExecute = false
+
+local SettingsFile = "1tap_PackFarm_Settings.json"
 
 local AllowedPacks = {
     ["HSR Pack"] = true,
@@ -55,13 +61,18 @@ end
 --==================================================
 
 local function Corner(obj, radius)
+
     local c = Instance.new("UICorner")
+
     c.CornerRadius = UDim.new(0, radius or 8)
     c.Parent = obj
+
     return c
+
 end
 
 local function MakeButton(parent, text, size, pos)
+
     local button = Instance.new("TextButton")
 
     button.Size = size
@@ -78,9 +89,11 @@ local function MakeButton(parent, text, size, pos)
     Corner(button, 6)
 
     return button
+
 end
 
 local function MakeLabel(parent, text, size, pos, textSize)
+
     local label = Instance.new("TextLabel")
 
     label.Size = size
@@ -94,6 +107,7 @@ local function MakeLabel(parent, text, size, pos, textSize)
     label.Parent = parent
 
     return label
+
 end
 
 --==================================================
@@ -101,12 +115,14 @@ end
 --==================================================
 
 local Gui = Instance.new("ScreenGui")
+
 Gui.Name = "1tap_PackFarm"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.Parent = CoreGui
 
 local Main = Instance.new("Frame")
+
 Main.Size = UDim2.new(0, 600, 0, 380)
 Main.Position = UDim2.new(0.5, -300, 0.5, -190)
 Main.BackgroundColor3 = BG
@@ -120,6 +136,7 @@ Corner(Main, 10)
 --==================================================
 
 local ShowHubButton = Instance.new("TextButton")
+
 ShowHubButton.Size = UDim2.new(0, 75, 0, 35)
 ShowHubButton.Position = UDim2.new(0, 10, 0.5, -17)
 ShowHubButton.BackgroundColor3 = PANEL
@@ -138,6 +155,7 @@ Corner(ShowHubButton, 7)
 --==================================================
 
 local TopBar = Instance.new("Frame")
+
 TopBar.Size = UDim2.new(1, 0, 0, 50)
 TopBar.BackgroundColor3 = BG
 TopBar.BorderSizePixel = 0
@@ -154,6 +172,7 @@ local Title = MakeLabel(
 Title.Font = Enum.Font.GothamBold
 
 local HideHubButton = Instance.new("TextButton")
+
 HideHubButton.Size = UDim2.new(0, 32, 0, 32)
 HideHubButton.Position = UDim2.new(1, -42, 0, 9)
 HideHubButton.BackgroundColor3 = PANEL
@@ -190,6 +209,7 @@ TopBar.InputBegan:Connect(function(input)
             end
 
         end)
+
     end
 
 end)
@@ -240,6 +260,7 @@ ShowHubButton.InputBegan:Connect(function(input)
             end
 
         end)
+
     end
 
 end)
@@ -271,6 +292,7 @@ end)
 --==================================================
 
 local Sidebar = Instance.new("Frame")
+
 Sidebar.Size = UDim2.new(0, 150, 1, -50)
 Sidebar.Position = UDim2.new(0, 0, 0, 50)
 Sidebar.BackgroundColor3 = SIDEBAR
@@ -314,6 +336,7 @@ local LogsTab = MakeButton(
 --==================================================
 
 local Content = Instance.new("Frame")
+
 Content.Size = UDim2.new(1, -150, 1, -50)
 Content.Position = UDim2.new(0, 150, 0, 50)
 Content.BackgroundColor3 = BG
@@ -325,6 +348,7 @@ Content.Parent = Main
 --==================================================
 
 local FarmPage = Instance.new("Frame")
+
 FarmPage.Size = UDim2.new(1, 0, 1, 0)
 FarmPage.BackgroundTransparency = 1
 FarmPage.Parent = Content
@@ -388,6 +412,7 @@ local EternityButton = MakeButton(
 --==================================================
 
 local SettingsPage = Instance.new("Frame")
+
 SettingsPage.Size = UDim2.new(1, 0, 1, 0)
 SettingsPage.BackgroundTransparency = 1
 SettingsPage.Visible = false
@@ -432,11 +457,40 @@ local AntiAFKButton = MakeButton(
     UDim2.new(0, 20, 0, 165)
 )
 
+local SaveSettingsButton = MakeButton(
+    SettingsPage,
+    "SAVE SETTINGS",
+    UDim2.new(0, 180, 0, 38),
+    UDim2.new(0, 20, 0, 220)
+)
+
+local LoadSettingsButton = MakeButton(
+    SettingsPage,
+    "LOAD SETTINGS",
+    UDim2.new(0, 180, 0, 38),
+    UDim2.new(0, 210, 0, 220)
+)
+
+local AutoLoadButton = MakeButton(
+    SettingsPage,
+    "Auto Load: ON",
+    UDim2.new(0, 180, 0, 38),
+    UDim2.new(0, 20, 0, 270)
+)
+
+local AutoExecuteButton = MakeButton(
+    SettingsPage,
+    "Auto Execute: OFF",
+    UDim2.new(0, 180, 0, 38),
+    UDim2.new(0, 210, 0, 270)
+)
+
 --==================================================
 -- LOGS PAGE
 --==================================================
 
 local LogsPage = Instance.new("Frame")
+
 LogsPage.Size = UDim2.new(1, 0, 1, 0)
 LogsPage.BackgroundTransparency = 1
 LogsPage.Visible = false
@@ -460,6 +514,7 @@ local ClearLogsButton = MakeButton(
 )
 
 local LogContainer = Instance.new("Frame")
+
 LogContainer.Size = UDim2.new(1, -40, 0, 235)
 LogContainer.Position = UDim2.new(0, 20, 0, 60)
 LogContainer.BackgroundColor3 = PANEL
@@ -487,6 +542,7 @@ local function RefreshLogs()
         local label = Instance.new("TextLabel")
 
         label.Size = UDim2.new(1, -20, 0, 30)
+
         label.Position = UDim2.new(
             0,
             10,
@@ -526,25 +582,350 @@ local function AddLog(text)
 end
 
 --==================================================
+-- FILE API
+--==================================================
+
+local function CanUseFileAPI()
+
+    return type(isfile) == "function"
+        and type(readfile) == "function"
+        and type(writefile) == "function"
+
+end
+
+--==================================================
+-- SAVE SETTINGS
+--==================================================
+
+local function SaveSettings()
+
+    if not CanUseFileAPI() then
+
+        AddLog("ERROR: File API không hỗ trợ")
+        warn("Executor không hỗ trợ isfile/readfile/writefile")
+
+        return false
+
+    end
+
+    local Data = {
+
+        Running = Running,
+
+        AntiAFK = AntiAFK,
+
+        Delay = Delay,
+
+        AllowedPacks = {
+            ["HSR Pack"] =
+                AllowedPacks["HSR Pack"] == true,
+
+            ["Eternity Pack"] =
+                AllowedPacks["Eternity Pack"] == true
+        },
+
+        AutoLoadSettings = AutoLoadSettings,
+
+        AutoExecute = AutoExecute
+
+    }
+
+    local EncodeSuccess, Encoded = pcall(function()
+
+        return HttpService:JSONEncode(Data)
+
+    end)
+
+    if not EncodeSuccess then
+
+        warn(
+            "JSON Encode lỗi:",
+            Encoded
+        )
+
+        AddLog("ERROR: JSON Encode")
+
+        return false
+
+    end
+
+    local WriteSuccess, WriteError = pcall(function()
+
+        writefile(
+            SettingsFile,
+            Encoded
+        )
+
+    end)
+
+    if not WriteSuccess then
+
+        warn(
+            "WriteFile lỗi:",
+            WriteError
+        )
+
+        AddLog("ERROR: Save Settings")
+
+        return false
+
+    end
+
+    AddLog("Settings SAVED")
+
+    return true
+
+end
+
+--==================================================
+-- LOAD SETTINGS
+--==================================================
+
+local function LoadSettings()
+
+    if not CanUseFileAPI() then
+
+        AddLog("ERROR: File API không hỗ trợ")
+
+        return false
+
+    end
+
+    if not isfile(SettingsFile) then
+
+        AddLog("Settings chưa tồn tại")
+
+        return false
+
+    end
+
+    local ReadSuccess, Content = pcall(function()
+
+        return readfile(SettingsFile)
+
+    end)
+
+    if not ReadSuccess then
+
+        warn(
+            "ReadFile lỗi:",
+            Content
+        )
+
+        AddLog("ERROR: Read Settings")
+
+        return false
+
+    end
+
+    local DecodeSuccess, Data = pcall(function()
+
+        return HttpService:JSONDecode(Content)
+
+    end)
+
+    if not DecodeSuccess
+        or typeof(Data) ~= "table" then
+
+        warn("Settings file không hợp lệ.")
+
+        AddLog("ERROR: Settings invalid")
+
+        return false
+
+    end
+
+    -- Running
+
+    if Data.Running ~= nil then
+
+        Running =
+            Data.Running == true
+
+    end
+
+    -- Anti AFK
+
+    if Data.AntiAFK ~= nil then
+
+        AntiAFK =
+            Data.AntiAFK == true
+
+    end
+
+    -- Delay
+
+    if Data.Delay ~= nil then
+
+        Delay = math.max(
+            0.2,
+            tonumber(Data.Delay) or 1.5
+        )
+
+    end
+
+    -- Allowed Packs
+
+    if typeof(Data.AllowedPacks) == "table" then
+
+        if Data.AllowedPacks["HSR Pack"] ~= nil then
+
+            AllowedPacks["HSR Pack"] =
+                Data.AllowedPacks["HSR Pack"] == true
+
+        end
+
+        if Data.AllowedPacks["Eternity Pack"] ~= nil then
+
+            AllowedPacks["Eternity Pack"] =
+                Data.AllowedPacks["Eternity Pack"] == true
+
+        end
+
+    end
+
+    -- Auto Load
+
+    if Data.AutoLoadSettings ~= nil then
+
+        AutoLoadSettings =
+            Data.AutoLoadSettings == true
+
+    end
+
+    -- Auto Execute
+
+    if Data.AutoExecute ~= nil then
+
+        AutoExecute =
+            Data.AutoExecute == true
+
+    end
+
+    AddLog("Settings LOADED")
+
+    return true
+
+end
+
+--==================================================
 -- PACK BUTTONS
 --==================================================
 
 local function UpdatePackButtons()
 
     if AllowedPacks["HSR Pack"] then
+
         HSRButton.Text = "HSR Pack: ON"
         HSRButton.BackgroundColor3 = SELECTED
+
     else
+
         HSRButton.Text = "HSR Pack: OFF"
         HSRButton.BackgroundColor3 = PANEL
+
     end
 
     if AllowedPacks["Eternity Pack"] then
-        EternityButton.Text = "Eternity Pack: ON"
-        EternityButton.BackgroundColor3 = SELECTED
+
+        EternityButton.Text =
+            "Eternity Pack: ON"
+
+        EternityButton.BackgroundColor3 =
+            SELECTED
+
     else
-        EternityButton.Text = "Eternity Pack: OFF"
-        EternityButton.BackgroundColor3 = PANEL
+
+        EternityButton.Text =
+            "Eternity Pack: OFF"
+
+        EternityButton.BackgroundColor3 =
+            PANEL
+
+    end
+
+end
+
+--==================================================
+-- SETTINGS UI
+--==================================================
+
+local function UpdateSettingsButtons()
+
+    DelayLabel.Text =
+        "Delay: "
+        .. string.format("%.1f", Delay)
+
+    if AntiAFK then
+
+        AntiAFKButton.Text =
+            "Anti-AFK: ON"
+
+        AntiAFKButton.BackgroundColor3 =
+            SELECTED
+
+    else
+
+        AntiAFKButton.Text =
+            "Anti-AFK: OFF"
+
+        AntiAFKButton.BackgroundColor3 =
+            PANEL
+
+    end
+
+    if AutoLoadSettings then
+
+        AutoLoadButton.Text =
+            "Auto Load: ON"
+
+        AutoLoadButton.BackgroundColor3 =
+            SELECTED
+
+    else
+
+        AutoLoadButton.Text =
+            "Auto Load: OFF"
+
+        AutoLoadButton.BackgroundColor3 =
+            PANEL
+
+    end
+
+    if AutoExecute then
+
+        AutoExecuteButton.Text =
+            "Auto Execute: ON"
+
+        AutoExecuteButton.BackgroundColor3 =
+            SELECTED
+
+    else
+
+        AutoExecuteButton.Text =
+            "Auto Execute: OFF"
+
+        AutoExecuteButton.BackgroundColor3 =
+            PANEL
+
+    end
+
+    if Running then
+
+        FarmStatus.Text =
+            "Status: RUNNING"
+
+        FarmStatus.TextColor3 =
+            GREEN
+
+    else
+
+        FarmStatus.Text =
+            "Status: STOPPED"
+
+        FarmStatus.TextColor3 =
+            RED
+
     end
 
 end
@@ -556,12 +937,20 @@ end
 local function BuyAndRoll()
 
     local success, result = pcall(function()
+
         return RequestConveyorOffer:InvokeServer(1)
+
     end)
 
-    if not success or typeof(result) ~= "table" then
-        AddLog("ERROR: Không lấy được offer")
+    if not success
+        or typeof(result) ~= "table" then
+
+        AddLog(
+            "ERROR: Không lấy được offer"
+        )
+
         return
+
     end
 
     for _, offer in pairs(result) do
@@ -615,6 +1004,7 @@ local function BuyAndRoll()
                 )
 
                 AddLog("ERROR: BuyPack")
+
                 return
 
             end
@@ -641,7 +1031,9 @@ local function BuyAndRoll()
                     rollError
                 )
 
-                AddLog("ERROR: SetRecoverPack")
+                AddLog(
+                    "ERROR: SetRecoverPack"
+                )
 
             else
 
@@ -661,7 +1053,9 @@ local function BuyAndRoll()
             end
 
             return
+
         end
+
     end
 
     AddLog("Skip")
@@ -704,10 +1098,17 @@ StartButton.MouseButton1Click:Connect(function()
 
     Running = true
 
-    FarmStatus.Text = "Status: RUNNING"
-    FarmStatus.TextColor3 = GREEN
+    FarmStatus.Text =
+        "Status: RUNNING"
 
-    AddLog("Auto Farm STARTED")
+    FarmStatus.TextColor3 =
+        GREEN
+
+    AddLog(
+        "Auto Farm STARTED"
+    )
+
+    SaveSettings()
 
 end)
 
@@ -719,10 +1120,17 @@ StopButton.MouseButton1Click:Connect(function()
 
     Running = false
 
-    FarmStatus.Text = "Status: STOPPED"
-    FarmStatus.TextColor3 = RED
+    FarmStatus.Text =
+        "Status: STOPPED"
 
-    AddLog("Auto Farm STOPPED")
+    FarmStatus.TextColor3 =
+        RED
+
+    AddLog(
+        "Auto Farm STOPPED"
+    )
+
+    SaveSettings()
 
 end)
 
@@ -739,8 +1147,12 @@ HSRButton.MouseButton1Click:Connect(function()
 
     AddLog(
         "HSR Pack: "
-        .. tostring(AllowedPacks["HSR Pack"])
+        .. tostring(
+            AllowedPacks["HSR Pack"]
+        )
     )
+
+    SaveSettings()
 
 end)
 
@@ -753,8 +1165,12 @@ EternityButton.MouseButton1Click:Connect(function()
 
     AddLog(
         "Eternity Pack: "
-        .. tostring(AllowedPacks["Eternity Pack"])
+        .. tostring(
+            AllowedPacks["Eternity Pack"]
+        )
     )
+
+    SaveSettings()
 
 end)
 
@@ -774,19 +1190,27 @@ MinusButton.MouseButton1Click:Connect(function()
 
     Delay = math.max(
         0.2,
-        math.round((Delay - 0.1) * 10) / 10
+        math.round(
+            (Delay - 0.1) * 10
+        ) / 10
     )
 
     UpdateDelay()
+
+    SaveSettings()
 
 end)
 
 PlusButton.MouseButton1Click:Connect(function()
 
     Delay =
-        math.round((Delay + 0.1) * 10) / 10
+        math.round(
+            (Delay + 0.1) * 10
+        ) / 10
 
     UpdateDelay()
+
+    SaveSettings()
 
 end)
 
@@ -796,19 +1220,17 @@ end)
 
 AntiAFKButton.MouseButton1Click:Connect(function()
 
-    AntiAFK = not AntiAFK
+    AntiAFK =
+        not AntiAFK
 
-    if AntiAFK then
+    UpdateSettingsButtons()
 
-        AntiAFKButton.Text = "Anti-AFK: ON"
-        AntiAFKButton.BackgroundColor3 = SELECTED
+    AddLog(
+        "Anti-AFK: "
+        .. tostring(AntiAFK)
+    )
 
-    else
-
-        AntiAFKButton.Text = "Anti-AFK: OFF"
-        AntiAFKButton.BackgroundColor3 = PANEL
-
-    end
+    SaveSettings()
 
 end)
 
@@ -827,12 +1249,75 @@ Player.Idled:Connect(function()
 end)
 
 --==================================================
--- CLEAR LOGS BUTTON
+-- SAVE / LOAD BUTTONS
+--==================================================
+
+SaveSettingsButton.MouseButton1Click:Connect(function()
+
+    SaveSettings()
+
+end)
+
+LoadSettingsButton.MouseButton1Click:Connect(function()
+
+    if LoadSettings() then
+
+        UpdatePackButtons()
+        UpdateSettingsButtons()
+        UpdateDelay()
+
+    end
+
+end)
+
+--==================================================
+-- AUTO LOAD
+--==================================================
+
+AutoLoadButton.MouseButton1Click:Connect(function()
+
+    AutoLoadSettings =
+        not AutoLoadSettings
+
+    UpdateSettingsButtons()
+
+    AddLog(
+        "Auto Load: "
+        .. tostring(AutoLoadSettings)
+    )
+
+    SaveSettings()
+
+end)
+
+--==================================================
+-- AUTO EXECUTE STATE
+--==================================================
+
+AutoExecuteButton.MouseButton1Click:Connect(function()
+
+    AutoExecute =
+        not AutoExecute
+
+    UpdateSettingsButtons()
+
+    AddLog(
+        "Auto Execute: "
+        .. tostring(AutoExecute)
+    )
+
+    SaveSettings()
+
+end)
+
+--==================================================
+-- CLEAR LOGS
 --==================================================
 
 ClearLogsButton.MouseButton1Click:Connect(function()
 
     table.clear(Logs)
+
     RefreshLogs()
 
 end)
@@ -865,39 +1350,56 @@ local function SelectTab(tab)
     SettingsPage.Visible = false
     LogsPage.Visible = false
 
-    FarmTab.BackgroundColor3 = PANEL
-    SettingsTab.BackgroundColor3 = PANEL
-    LogsTab.BackgroundColor3 = PANEL
+    FarmTab.BackgroundColor3 =
+        PANEL
+
+    SettingsTab.BackgroundColor3 =
+        PANEL
+
+    LogsTab.BackgroundColor3 =
+        PANEL
 
     if tab == "Farm" then
 
         FarmPage.Visible = true
-        FarmTab.BackgroundColor3 = SELECTED
+
+        FarmTab.BackgroundColor3 =
+            SELECTED
 
     elseif tab == "Settings" then
 
         SettingsPage.Visible = true
-        SettingsTab.BackgroundColor3 = SELECTED
+
+        SettingsTab.BackgroundColor3 =
+            SELECTED
 
     elseif tab == "Logs" then
 
         LogsPage.Visible = true
-        LogsTab.BackgroundColor3 = SELECTED
+
+        LogsTab.BackgroundColor3 =
+            SELECTED
 
     end
 
 end
 
 FarmTab.MouseButton1Click:Connect(function()
+
     SelectTab("Farm")
+
 end)
 
 SettingsTab.MouseButton1Click:Connect(function()
+
     SelectTab("Settings")
+
 end)
 
 LogsTab.MouseButton1Click:Connect(function()
+
     SelectTab("Logs")
+
 end)
 
 --==================================================
@@ -906,5 +1408,19 @@ end)
 
 UpdatePackButtons()
 UpdateDelay()
+UpdateSettingsButtons()
 SelectTab("Farm")
-AddLog("1tap Pack Farm loaded")
+
+if AutoLoadSettings then
+
+    LoadSettings()
+
+    UpdatePackButtons()
+    UpdateDelay()
+    UpdateSettingsButtons()
+
+end
+
+AddLog(
+    "1tap Pack Farm loaded"
+)
