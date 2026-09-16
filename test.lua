@@ -70,6 +70,7 @@ Main.Size = UDim2.new(0, 600, 0, 380)
 Main.Position = UDim2.new(0.5, -300, 0.5, -190)
 Main.BackgroundColor3 = BG
 Main.BorderSizePixel = 0
+Main.Active = true
 Main.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner")
@@ -84,6 +85,7 @@ local Sidebar = Instance.new("Frame")
 Sidebar.Size = UDim2.new(0, 150, 1, 0)
 Sidebar.BackgroundColor3 = SIDEBAR
 Sidebar.BorderSizePixel = 0
+Sidebar.Active = true
 Sidebar.Parent = Main
 
 local SideCorner = Instance.new("UICorner")
@@ -110,40 +112,60 @@ Subtitle.Font = Enum.Font.Gotham
 Subtitle.Parent = Sidebar
 
 --==================================================
--- DRAG
+-- CONTENT
 --==================================================
 
-local DragArea = Instance.new("Frame")
-DragArea.Name = "DragArea"
-DragArea.Size = UDim2.new(1, 0, 0, 75)
-DragArea.Position = UDim2.new(0, 0, 0, 0)
-DragArea.BackgroundTransparency = 1
-DragArea.Active = true
-DragArea.ZIndex = 10
-DragArea.Parent = Main
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -150, 1, 0)
+Content.Position = UDim2.new(0, 150, 0, 0)
+Content.BackgroundTransparency = 1
+Content.Active = true
+Content.Parent = Main
+
+--==================================================
+-- DRAG
+--==================================================
 
 local Dragging = false
 local DragStart = nil
 local StartPos = nil
 
-DragArea.InputBegan:Connect(function(Input)
+local function IsButton(Object)
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+    while Object and Object ~= Main do
 
-        Dragging = true
-        DragStart = Input.Position
-        StartPos = Main.Position
+        if Object:IsA("TextButton") then
+            return true
+        end
+
+        Object = Object.Parent
 
     end
 
+    return false
+
+end
+
+Main.InputBegan:Connect(function(Input)
+
+    if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+        return
+    end
+
+    if IsButton(Input.Target) then
+        return
+    end
+
+    Dragging = true
+    DragStart = Input.Position
+    StartPos = Main.Position
+
 end)
 
-DragArea.InputEnded:Connect(function(Input)
+UserInputService.InputEnded:Connect(function(Input)
 
     if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-
         Dragging = false
-
     end
 
 end)
@@ -168,16 +190,6 @@ UserInputService.InputChanged:Connect(function(Input)
     )
 
 end)
-
---==================================================
--- CONTENT
---==================================================
-
-local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -150, 1, 0)
-Content.Position = UDim2.new(0, 150, 0, 0)
-Content.BackgroundTransparency = 1
-Content.Parent = Main
 
 --==================================================
 -- PAGES
@@ -220,6 +232,7 @@ local function MakeButton(Parent, Text, Size, Position)
     Button.Font = Enum.Font.GothamMedium
 
     Button.AutoButtonColor = false
+    Button.Active = true
     Button.Parent = Parent
 
     local Corner = Instance.new("UICorner")
@@ -333,6 +346,7 @@ local function AddLog(Text)
 
     Label.Size = UDim2.new(1, -10, 0, 25)
     Label.BackgroundTransparency = 1
+
     Label.Text =
         "["
         .. os.date("%H:%M:%S")
@@ -705,7 +719,6 @@ local function BuyAndRoll()
 
     end
 
-    local Found = 0
     local SkippedPacks = {}
 
     for _, Offer in pairs(Result) do
@@ -718,9 +731,17 @@ local function BuyAndRoll()
         local PackName = Offer.PackName
         local Mutation = Offer.Mutation
 
-        if AllowedPacks[PackName] then
+        -- Fallback
+        if not PackName then
 
-            Found += 1
+            PackName =
+                Offer.Name
+                or Offer.Pack
+                or Offer.DisplayName
+
+        end
+
+        if AllowedPacks[PackName] then
 
             AddLog(
                 "Buying: "
@@ -777,6 +798,13 @@ local function BuyAndRoll()
                 table.insert(
                     SkippedPacks,
                     tostring(PackName)
+                )
+
+            else
+
+                table.insert(
+                    SkippedPacks,
+                    "Unknown Pack"
                 )
 
             end
