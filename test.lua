@@ -1,5 +1,4 @@
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
@@ -62,6 +61,7 @@ end)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "1tap_PackFarm"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = CoreGui
 
 local Main = Instance.new("Frame")
@@ -76,6 +76,16 @@ Main.Parent = ScreenGui
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = Main
+
+--==================================================
+-- DRAG
+--==================================================
+
+local DragDetector = Instance.new("UIDragDetector")
+DragDetector.Name = "HubDragDetector"
+DragDetector.DragStyle =
+    Enum.UIDragDetectorDragStyle.TranslatePlane
+DragDetector.Parent = Main
 
 --==================================================
 -- SIDEBAR
@@ -119,77 +129,7 @@ local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -150, 1, 0)
 Content.Position = UDim2.new(0, 150, 0, 0)
 Content.BackgroundTransparency = 1
-Content.Active = true
 Content.Parent = Main
-
---==================================================
--- DRAG
---==================================================
-
-local Dragging = false
-local DragStart = nil
-local StartPos = nil
-
-local function IsButton(Object)
-
-    while Object and Object ~= Main do
-
-        if Object:IsA("TextButton") then
-            return true
-        end
-
-        Object = Object.Parent
-
-    end
-
-    return false
-
-end
-
-Main.InputBegan:Connect(function(Input)
-
-    if Input.UserInputType ~= Enum.UserInputType.MouseButton1 then
-        return
-    end
-
-    if IsButton(Input.Target) then
-        return
-    end
-
-    Dragging = true
-    DragStart = Input.Position
-    StartPos = Main.Position
-
-end)
-
-UserInputService.InputEnded:Connect(function(Input)
-
-    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-        Dragging = false
-    end
-
-end)
-
-UserInputService.InputChanged:Connect(function(Input)
-
-    if not Dragging then
-        return
-    end
-
-    if Input.UserInputType ~= Enum.UserInputType.MouseMovement then
-        return
-    end
-
-    local Delta = Input.Position - DragStart
-
-    Main.Position = UDim2.new(
-        StartPos.X.Scale,
-        StartPos.X.Offset + Delta.X,
-        StartPos.Y.Scale,
-        StartPos.Y.Offset + Delta.Y
-    )
-
-end)
 
 --==================================================
 -- PAGES
@@ -731,7 +671,6 @@ local function BuyAndRoll()
         local PackName = Offer.PackName
         local Mutation = Offer.Mutation
 
-        -- Fallback
         if not PackName then
 
             PackName =
