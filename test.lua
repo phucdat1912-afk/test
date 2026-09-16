@@ -706,6 +706,7 @@ local function BuyAndRoll()
     end
 
     local Found = 0
+    local SkippedPacks = {}
 
     for _, Offer in pairs(Result) do
 
@@ -769,13 +770,30 @@ local function BuyAndRoll()
 
             task.wait(0.2)
 
+        else
+
+            if PackName then
+
+                table.insert(
+                    SkippedPacks,
+                    tostring(PackName)
+                )
+
+            end
+
         end
 
     end
 
-    if Found == 0 then
+    if #SkippedPacks > 0 then
 
-        AddLog("Skip")
+        AddLog(
+            "Skip: "
+            .. table.concat(
+                SkippedPacks,
+                ", "
+            )
+        )
 
     end
 
