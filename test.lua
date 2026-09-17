@@ -27,6 +27,8 @@ local ToggleStates = {
     ["Anti-AFK"] = true
 }
 
+-- Danh sách pack được phép mua.
+-- Sẽ tự động cập nhật bằng Scan Packs.
 local AllowedPacks = {
     ["Titan Slayer Pack"] = true,
     ["Chain Devil Pack"] = true,
@@ -55,7 +57,10 @@ local YELLOW = Color3.fromRGB(235, 190, 70)
 --==================================================
 
 pcall(function()
-    CoreGui:FindFirstChild("1tap_PackFarm"):Destroy()
+    local Old = CoreGui:FindFirstChild("1tap_PackFarm")
+    if Old then
+        Old:Destroy()
+    end
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -447,74 +452,6 @@ end
 ClearLogsButton.MouseButton1Click:Connect(ClearLogs)
 
 --==================================================
--- TOGGLE CREATOR
---==================================================
-
-local function CreateToggle(Parent, Text, Y, Key)
-    local Button = Create("TextButton", {
-        Size = UDim2.new(1, -20, 0, 38),
-        Position = UDim2.new(0, 10, 0, Y),
-        BackgroundColor3 = BUTTON,
-        BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
-        ZIndex = 30
-    }, Parent)
-
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, 7)
-    }, Button)
-
-    local Label = Create("TextLabel", {
-        Size = UDim2.new(1, -60, 1, 0),
-        Position = UDim2.new(0, 12, 0, 0),
-        BackgroundTransparency = 1,
-        Text = Text,
-        TextColor3 = WHITE,
-        TextSize = 13,
-        Font = Enum.Font.GothamMedium,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 31
-    }, Button)
-
-    local Indicator = Create("TextLabel", {
-        Size = UDim2.new(0, 45, 1, 0),
-        Position = UDim2.new(1, -50, 0, 0),
-        BackgroundTransparency = 1,
-        TextSize = 12,
-        Font = Enum.Font.GothamBold,
-        ZIndex = 31
-    }, Button)
-
-    local function Update()
-        if ToggleStates[Key] then
-            Indicator.Text = "ON"
-            Indicator.TextColor3 = GREEN
-        else
-            Indicator.Text = "OFF"
-            Indicator.TextColor3 = RED
-        end
-    end
-
-    Update()
-
-    Button.MouseEnter:Connect(function()
-        Button.BackgroundColor3 = HOVER
-    end)
-
-    Button.MouseLeave:Connect(function()
-        Button.BackgroundColor3 = BUTTON
-    end)
-
-    Button.MouseButton1Click:Connect(function()
-        ToggleStates[Key] = not ToggleStates[Key]
-        Update()
-    end)
-
-    return Button
-end
-
---==================================================
 -- FARM PAGE
 --==================================================
 
@@ -535,144 +472,198 @@ Create("UICorner", {
     CornerRadius = UDim.new(0, 7)
 }, StartButton)
 
-CreateToggle(
-    FarmPage,
-    "Titan Slayer Pack",
-    62,
-    "Titan Slayer Pack"
-)
-
-CreateToggle(
-    FarmPage,
-    "Chain Devil Pack",
-    106,
-    "Chain Devil Pack"
-)
-
-CreateToggle(
-    FarmPage,
-    "Soccer Pack",
-    150,
-    "Soccer Pack"
-)
-
--- ETERNITY PACK
-CreateToggle(
-    FarmPage,
-    "Eternity Pack",
-    194,
-    "Eternity Pack"
-)
-
-CreateToggle(
-    FarmPage,
-    "Event 2 Pack",
-    238,
-    "Event 2 Pack"
-)
-
 --==================================================
--- SETTINGS PAGE
+-- PACK SCAN
 --==================================================
 
-local DelayTitle = Create("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 30),
-    Position = UDim2.new(0, 10, 0, 15),
-    BackgroundTransparency = 1,
-    Text = "Farm Delay",
+local ScanButton = Create("TextButton", {
+    Size = UDim2.new(0, 115, 0, 34),
+    Position = UDim2.new(0, 10, 0, 60),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "SCAN PACKS",
     TextColor3 = WHITE,
-    TextSize = 15,
+    TextSize = 12,
     Font = Enum.Font.GothamBold,
+    AutoButtonColor = false,
+    ZIndex = 30
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, ScanButton)
+
+local PackCountLabel = Create("TextLabel", {
+    Size = UDim2.new(1, -135, 0, 34),
+    Position = UDim2.new(0, 130, 0, 60),
+    BackgroundTransparency = 1,
+    Text = "0 packs found",
+    TextColor3 = GRAY,
+    TextSize = 12,
+    Font = Enum.Font.GothamMedium,
     TextXAlignment = Enum.TextXAlignment.Left,
     ZIndex = 30
-}, SettingsPage)
+}, FarmPage)
 
-local DelayValue = Create("TextLabel", {
-    Size = UDim2.new(0, 100, 0, 35),
-    Position = UDim2.new(0, 10, 0, 55),
+local PackScroll = Create("ScrollingFrame", {
+    Name = "PackScroll",
+    Size = UDim2.new(1, -20, 1, -105),
+    Position = UDim2.new(0, 10, 0, 100),
     BackgroundColor3 = PANEL2,
     BorderSizePixel = 0,
-    Text = string.format("%.1f", Delay) .. "s",
-    TextColor3 = WHITE,
-    TextSize = 14,
-    Font = Enum.Font.GothamBold,
-    ZIndex = 30
-}, SettingsPage)
+    ScrollBarThickness = 4,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    ZIndex = 25
+}, FarmPage)
 
 Create("UICorner", {
     CornerRadius = UDim.new(0, 7)
-}, DelayValue)
+}, PackScroll)
 
-local MinusButton = Create("TextButton", {
-    Size = UDim2.new(0, 40, 0, 35),
-    Position = UDim2.new(0, 120, 0, 55),
-    BackgroundColor3 = BUTTON,
-    BorderSizePixel = 0,
-    Text = "-",
-    TextColor3 = WHITE,
-    TextSize = 18,
-    Font = Enum.Font.GothamBold,
-    AutoButtonColor = false,
-    ZIndex = 30
-}, SettingsPage)
+local PackLayout = Create("UIListLayout", {
+    Padding = UDim.new(0, 5),
+    SortOrder = Enum.SortOrder.Name
+}, PackScroll)
 
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 7)
-}, MinusButton)
+Create("UIPadding", {
+    PaddingTop = UDim.new(0, 7),
+    PaddingBottom = UDim.new(0, 7),
+    PaddingLeft = UDim.new(0, 7),
+    PaddingRight = UDim.new(0, 7)
+}, PackScroll)
 
-local PlusButton = Create("TextButton", {
-    Size = UDim2.new(0, 40, 0, 35),
-    Position = UDim2.new(0, 165, 0, 55),
-    BackgroundColor3 = BUTTON,
-    BorderSizePixel = 0,
-    Text = "+",
-    TextColor3 = WHITE,
-    TextSize = 18,
-    Font = Enum.Font.GothamBold,
-    AutoButtonColor = false,
-    ZIndex = 30
-}, SettingsPage)
+--==================================================
+-- PACK TOGGLE
+--==================================================
 
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 7)
-}, PlusButton)
+local PackButtons = {}
 
-local function UpdateDelay()
-    Delay = math.clamp(
-        math.round(Delay * 10) / 10,
-        0.1,
-        10
-    )
+local function CreatePackToggle(PackName)
+    if PackButtons[PackName] then
+        return
+    end
 
-    DelayValue.Text = string.format("%.1f", Delay) .. "s"
+    local Button = Create("TextButton", {
+        Name = PackName,
+        Size = UDim2.new(1, -5, 0, 36),
+        BackgroundColor3 = BUTTON,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        LayoutOrder = 1,
+        ZIndex = 30
+    }, PackScroll)
+
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, 7)
+    }, Button)
+
+    local Label = Create("TextLabel", {
+        Size = UDim2.new(1, -65, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Text = PackName,
+        TextColor3 = WHITE,
+        TextSize = 12,
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        ZIndex = 31
+    }, Button)
+
+    local Indicator = Create("TextLabel", {
+        Size = UDim2.new(0, 50, 1, 0),
+        Position = UDim2.new(1, -55, 0, 0),
+        BackgroundTransparency = 1,
+        TextSize = 11,
+        Font = Enum.Font.GothamBold,
+        ZIndex = 31
+    }, Button)
+
+    local function Update()
+        if ToggleStates[PackName] then
+            Indicator.Text = "ON"
+            Indicator.TextColor3 = GREEN
+        else
+            Indicator.Text = "OFF"
+            Indicator.TextColor3 = RED
+        end
+    end
+
+    Update()
+
+    Button.MouseEnter:Connect(function()
+        Button.BackgroundColor3 = HOVER
+    end)
+
+    Button.MouseLeave:Connect(function()
+        Button.BackgroundColor3 = BUTTON
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+        ToggleStates[PackName] = not ToggleStates[PackName]
+        Update()
+    end)
+
+    PackButtons[PackName] = Button
 end
 
-MinusButton.MouseButton1Click:Connect(function()
-    Delay -= 0.1
-    UpdateDelay()
-end)
-
-PlusButton.MouseButton1Click:Connect(function()
-    Delay += 0.1
-    UpdateDelay()
-end)
-
-CreateToggle(
-    SettingsPage,
-    "Anti-AFK",
-    110,
-    "Anti-AFK"
-)
-
 --==================================================
--- ANTI AFK
+-- SCAN ALL PACKS
 --==================================================
 
-Player.Idled:Connect(function()
-    if ToggleStates["Anti-AFK"] then
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+local function ScanPacks()
+    local PotentialCards = ReplicatedStorage:FindFirstChild("PotentialCards")
+
+    if not PotentialCards then
+        PackCountLabel.Text = "PotentialCards not found"
+        AddLog("ERROR: PotentialCards")
+        return
     end
+
+    local Found = {}
+
+    for _, Object in ipairs(PotentialCards:GetChildren()) do
+        if Object:IsA("Folder") then
+            local PackName = Object.Name
+
+            Found[PackName] = true
+            AllowedPacks[PackName] = true
+
+            if ToggleStates[PackName] == nil then
+                ToggleStates[PackName] = false
+            end
+
+            CreatePackToggle(PackName)
+        end
+    end
+
+    local Count = 0
+
+    for _ in pairs(Found) do
+        Count += 1
+    end
+
+    PackCountLabel.Text = tostring(Count) .. " packs found"
+
+    AddLog(
+        "Scanned: " ..
+        tostring(Count) ..
+        " packs"
+    )
+end
+
+ScanButton.MouseEnter:Connect(function()
+    ScanButton.BackgroundColor3 = HOVER
+end)
+
+ScanButton.MouseLeave:Connect(function()
+    ScanButton.BackgroundColor3 = BUTTON
+end)
+
+ScanButton.MouseButton1Click:Connect(function()
+    ScanPacks()
 end)
 
 --==================================================
@@ -802,11 +793,18 @@ end
 --==================================================
 
 local function HasSelectedPack()
-    return
-        IsPackSelected("Titan Slayer Pack")
-        or IsPackSelected("Chain Devil Pack")
-        or IsPackSelected("Soccer Pack")
-        or IsPackSelected("Eternity Pack")
+    for PackName, Enabled in pairs(ToggleStates) do
+        if Enabled
+            and PackName ~= "Anti-AFK"
+            and PackName ~= "Event 2 Pack" then
+
+            if AllowedPacks[PackName] then
+                return true
+            end
+        end
+    end
+
+    return false
 end
 
 local function StartFarm()
@@ -858,16 +856,153 @@ StartButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
+-- SETTINGS PAGE
+--==================================================
+
+local DelayTitle = Create("TextLabel", {
+    Size = UDim2.new(1, -20, 0, 30),
+    Position = UDim2.new(0, 10, 0, 15),
+    BackgroundTransparency = 1,
+    Text = "Farm Delay",
+    TextColor3 = WHITE,
+    TextSize = 15,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 30
+}, SettingsPage)
+
+local DelayValue = Create("TextLabel", {
+    Size = UDim2.new(0, 100, 0, 35),
+    Position = UDim2.new(0, 10, 0, 55),
+    BackgroundColor3 = PANEL2,
+    BorderSizePixel = 0,
+    Text = string.format("%.1f", Delay) .. "s",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 30
+}, SettingsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, DelayValue)
+
+local MinusButton = Create("TextButton", {
+    Size = UDim2.new(0, 40, 0, 35),
+    Position = UDim2.new(0, 120, 0, 55),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "-",
+    TextColor3 = WHITE,
+    TextSize = 18,
+    Font = Enum.Font.GothamBold,
+    AutoButtonColor = false,
+    ZIndex = 30
+}, SettingsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, MinusButton)
+
+local PlusButton = Create("TextButton", {
+    Size = UDim2.new(0, 40, 0, 35),
+    Position = UDim2.new(0, 165, 0, 55),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "+",
+    TextColor3 = WHITE,
+    TextSize = 18,
+    Font = Enum.Font.GothamBold,
+    AutoButtonColor = false,
+    ZIndex = 30
+}, SettingsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, PlusButton)
+
+local function UpdateDelay()
+    Delay = math.clamp(
+        math.round(Delay * 10) / 10,
+        0.1,
+        10
+    )
+
+    DelayValue.Text = string.format("%.1f", Delay) .. "s"
+end
+
+MinusButton.MouseButton1Click:Connect(function()
+    Delay -= 0.1
+    UpdateDelay()
+end)
+
+PlusButton.MouseButton1Click:Connect(function()
+    Delay += 0.1
+    UpdateDelay()
+end)
+
+--==================================================
+-- ANTI AFK
+--==================================================
+
+local AntiAFKButton = Create("TextButton", {
+    Size = UDim2.new(1, -20, 0, 38),
+    Position = UDim2.new(0, 10, 0, 110),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "Anti-AFK",
+    TextColor3 = WHITE,
+    TextSize = 13,
+    Font = Enum.Font.GothamMedium,
+    AutoButtonColor = false,
+    ZIndex = 30
+}, SettingsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, AntiAFKButton)
+
+AntiAFKButton.MouseButton1Click:Connect(function()
+    ToggleStates["Anti-AFK"] =
+        not ToggleStates["Anti-AFK"]
+
+    if ToggleStates["Anti-AFK"] then
+        AntiAFKButton.Text = "Anti-AFK: ON"
+        AntiAFKButton.TextColor3 = GREEN
+    else
+        AntiAFKButton.Text = "Anti-AFK: OFF"
+        AntiAFKButton.TextColor3 = RED
+    end
+end)
+
+if ToggleStates["Anti-AFK"] then
+    AntiAFKButton.Text = "Anti-AFK: ON"
+    AntiAFKButton.TextColor3 = GREEN
+else
+    AntiAFKButton.Text = "Anti-AFK: OFF"
+    AntiAFKButton.TextColor3 = RED
+end
+
+--==================================================
+-- ANTI AFK
+--==================================================
+
+Player.Idled:Connect(function()
+    if ToggleStates["Anti-AFK"] then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end
+end)
+
+--==================================================
 -- SHOW / HIDE BUTTON
 --==================================================
 
 local ShowButton = Create("TextButton", {
     Name = "ShowButton",
 
-    -- KÍCH THƯỚC ICON
     Size = UDim2.new(0, 48, 0, 48),
 
-    -- GIỮA MÉP TRÁI MÀN HÌNH
     Position = UDim2.new(
         0,
         10,
@@ -956,10 +1091,15 @@ ShowButton.MouseButton1Click:Connect(function()
 end)
 
 --==================================================
--- START
+-- INITIAL SCAN
 --==================================================
 
 Main.Visible = true
 ShowButton.Visible = false
 
 AddLog("Ready")
+
+-- Tự scan ngay khi script chạy
+task.defer(function()
+    ScanPacks()
+end)
