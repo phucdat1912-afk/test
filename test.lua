@@ -184,6 +184,7 @@ DragBar.MouseButton1Down:Connect(function()
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
+
     if not MainDragging then
         return
     end
@@ -205,9 +206,11 @@ UserInputService.InputChanged:Connect(function(Input)
 end)
 
 UserInputService.InputEnded:Connect(function(Input)
+
     if Input.UserInputType == Enum.UserInputType.MouseButton1 then
         MainDragging = false
     end
+
 end)
 
 --==================================================
@@ -228,6 +231,7 @@ Create("UICorner", {
 }, Sidebar)
 
 local function CreateSideButton(Text, Y)
+
     local Button = Create("TextButton", {
         Size = UDim2.new(1, -20, 0, 40),
         Position = UDim2.new(0, 10, 0, Y),
@@ -320,9 +324,11 @@ for _, Page in ipairs({
     SettingsPage,
     LogsPage
 }) do
+
     Create("UICorner", {
         CornerRadius = UDim.new(0, 8)
     }, Page)
+
 end
 
 --==================================================
@@ -330,6 +336,7 @@ end
 --==================================================
 
 local function ShowPage(Page)
+
     FarmPage.Visible = false
     EventsPage.Visible = false
     SettingsPage.Visible = false
@@ -405,26 +412,35 @@ Create("UICorner", {
 }, ClearLogsButton)
 
 local function ClearLogs()
+
     Logs = {}
 
     for _, Child in ipairs(LogScroll:GetChildren()) do
+
         if Child:IsA("TextLabel") then
             Child:Destroy()
         end
+
     end
 end
 
 local function GetLogColor(Text)
+
     if string.find(Text, "Buying:") then
         return YELLOW
+
     elseif string.find(Text, "ROLLED:") then
         return GREEN
+
     elseif string.find(Text, "ERROR:") then
         return RED
+
     elseif string.find(Text, "Skip:") then
         return GRAY
+
     elseif string.find(Text, "Farm Started") then
         return GREEN
+
     elseif string.find(Text, "Farm Stopped") then
         return RED
     end
@@ -433,6 +449,7 @@ local function GetLogColor(Text)
 end
 
 local function AddLog(Text)
+
     table.insert(Logs, Text)
 
     while #Logs > 8 do
@@ -440,12 +457,15 @@ local function AddLog(Text)
     end
 
     for _, Child in ipairs(LogScroll:GetChildren()) do
+
         if Child:IsA("TextLabel") then
             Child:Destroy()
         end
+
     end
 
     for Index, LogText in ipairs(Logs) do
+
         Create("TextLabel", {
             Size = UDim2.new(1, 0, 0, 25),
             BackgroundTransparency = 1,
@@ -457,9 +477,11 @@ local function AddLog(Text)
             LayoutOrder = Index,
             ZIndex = 30
         }, LogScroll)
+
     end
 
     task.defer(function()
+
         LogScroll.CanvasPosition = Vector2.new(
             0,
             math.max(
@@ -468,6 +490,7 @@ local function AddLog(Text)
                 LogScroll.AbsoluteWindowSize.Y
             )
         )
+
     end)
 end
 
@@ -495,13 +518,43 @@ Create("UICorner", {
 }, StartButton)
 
 --==================================================
+-- SEARCH BOX
+--==================================================
+
+local SearchBox = Create("TextBox", {
+    Name = "PackSearch",
+    Size = UDim2.new(1, -20, 0, 38),
+    Position = UDim2.new(0, 10, 0, 60),
+    BackgroundColor3 = PANEL2,
+    BorderSizePixel = 0,
+    Text = "",
+    PlaceholderText = "Search pack...",
+    PlaceholderColor3 = GRAY,
+    TextColor3 = WHITE,
+    TextSize = 12,
+    Font = Enum.Font.GothamMedium,
+    ClearTextOnFocus = false,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 30
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, SearchBox)
+
+Create("UIPadding", {
+    PaddingLeft = UDim.new(0, 12),
+    PaddingRight = UDim.new(0, 12)
+}, SearchBox)
+
+--==================================================
 -- SCAN
 --==================================================
 
 local ScanButton = Create("TextButton", {
     Name = "ScanPacks",
     Size = UDim2.new(0, 115, 0, 34),
-    Position = UDim2.new(0, 10, 0, 60),
+    Position = UDim2.new(0, 10, 0, 105),
     BackgroundColor3 = BUTTON,
     BorderSizePixel = 0,
     Text = "SCAN PACKS",
@@ -518,7 +571,7 @@ Create("UICorner", {
 
 local PackCountLabel = Create("TextLabel", {
     Size = UDim2.new(1, -135, 0, 34),
-    Position = UDim2.new(0, 130, 0, 60),
+    Position = UDim2.new(0, 130, 0, 105),
     BackgroundTransparency = 1,
     Text = "0 packs found",
     TextColor3 = GRAY,
@@ -534,8 +587,8 @@ local PackCountLabel = Create("TextLabel", {
 
 local PackScroll = Create("ScrollingFrame", {
     Name = "PackScroll",
-    Size = UDim2.new(1, -20, 1, -105),
-    Position = UDim2.new(0, 10, 0, 100),
+    Size = UDim2.new(1, -20, 1, -150),
+    Position = UDim2.new(0, 10, 0, 145),
     BackgroundColor3 = PANEL2,
     BorderSizePixel = 0,
     ScrollBarThickness = 4,
@@ -548,7 +601,7 @@ Create("UICorner", {
     CornerRadius = UDim.new(0, 7)
 }, PackScroll)
 
-Create("UIGridLayout", {
+local PackGrid = Create("UIGridLayout", {
     CellSize = UDim2.new(0.31, 0, 0, 40),
     CellPadding = UDim2.new(0.025, 0, 0, 7),
     SortOrder = Enum.SortOrder.Name,
@@ -566,7 +619,43 @@ Create("UIPadding", {
 local PackButtons = {}
 
 --==================================================
--- PACK TOGGLE
+-- SEARCH FILTER
+--==================================================
+
+local CurrentSearch = ""
+
+local function UpdatePackVisibility()
+
+    local SearchText =
+        string.lower(
+            tostring(CurrentSearch or "")
+        )
+
+    for PackName, Button in pairs(PackButtons) do
+
+        local NameLower =
+            string.lower(PackName)
+
+        if SearchText == ""
+            or string.find(
+                NameLower,
+                SearchText,
+                1,
+                true
+            ) then
+
+            Button.Visible = true
+
+        else
+
+            Button.Visible = false
+
+        end
+    end
+end
+
+--==================================================
+-- CREATE PACK TOGGLE
 --==================================================
 
 local function CreatePackToggle(PackName)
@@ -581,6 +670,7 @@ local function CreatePackToggle(PackName)
         BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
+        Visible = true,
         ZIndex = 30
     }, PackScroll)
 
@@ -613,13 +703,16 @@ local function CreatePackToggle(PackName)
     local function Update()
 
         if ToggleStates[PackName] then
+
             Indicator.Text = "ON"
             Indicator.TextColor3 = GREEN
+
         else
+
             Indicator.Text = "OFF"
             Indicator.TextColor3 = RED
-        end
 
+        end
     end
 
     Update()
@@ -642,7 +735,21 @@ local function CreatePackToggle(PackName)
     end)
 
     PackButtons[PackName] = Button
+
+    UpdatePackVisibility()
 end
+
+--==================================================
+-- SEARCH CHANGED
+--==================================================
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+
+    CurrentSearch = SearchBox.Text
+
+    UpdatePackVisibility()
+
+end)
 
 --==================================================
 -- SCAN PACKS
@@ -692,13 +799,16 @@ local function ScanPacks()
     end
 
     PackCountLabel.Text =
-        tostring(Count) .. " packs found"
+        tostring(Count) ..
+        " packs found"
 
     AddLog(
         "Scanned: " ..
         tostring(Count) ..
         " packs"
     )
+
+    UpdatePackVisibility()
 end
 
 ScanButton.MouseEnter:Connect(function()
@@ -841,9 +951,7 @@ end)
 --==================================================
 
 local function IsPackSelected(PackName)
-
     return ToggleStates[PackName] == true
-
 end
 
 local function HasSelectedPack()
@@ -859,7 +967,6 @@ local function HasSelectedPack()
             end
 
         end
-
     end
 
     return false
@@ -1199,7 +1306,6 @@ local function UpdateAntiAFK()
         AntiAFKButton.TextColor3 = RED
 
     end
-
 end
 
 UpdateAntiAFK()
