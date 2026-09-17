@@ -20,7 +20,7 @@ local SetRecoverPack = Remotes:WaitForChild("SetRecoverPack")
 -- SETTINGS
 --==================================================
 
-local Delay = 1.5
+local Delay = 0.5
 local Running = false
 
 local ToggleStates = {
