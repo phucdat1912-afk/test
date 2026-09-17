@@ -15,7 +15,7 @@ local Player = Players.LocalPlayer
 -- SETTINGS
 --==================================================
 
-local Delay = 0.5
+local Delay = 1.5
 local Running = false
 
 local ToggleStates = {
