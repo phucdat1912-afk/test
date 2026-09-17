@@ -27,8 +27,6 @@ local ToggleStates = {
     ["Anti-AFK"] = true
 }
 
--- Danh sách pack được phép mua.
--- Sẽ tự động cập nhật bằng Scan Packs.
 local AllowedPacks = {
     ["Titan Slayer Pack"] = true,
     ["Chain Devil Pack"] = true,
@@ -53,15 +51,20 @@ local RED = Color3.fromRGB(220, 70, 70)
 local YELLOW = Color3.fromRGB(235, 190, 70)
 
 --==================================================
--- GUI
+-- REMOVE OLD GUI
 --==================================================
 
 pcall(function()
     local Old = CoreGui:FindFirstChild("1tap_PackFarm")
+
     if Old then
         Old:Destroy()
     end
 end)
+
+--==================================================
+-- GUI
+--==================================================
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "1tap_PackFarm"
@@ -78,6 +81,7 @@ local function Create(Class, Properties, Parent)
     end
 
     Object.Parent = Parent
+
     return Object
 end
 
@@ -193,6 +197,7 @@ UserInputService.InputChanged:Connect(function(Input)
     Main.Position = UDim2.new(
         MainStartPosition.X.Scale,
         MainStartPosition.X.Offset + Delta.X,
+
         MainStartPosition.Y.Scale,
         MainStartPosition.Y.Offset + Delta.Y
     )
@@ -353,7 +358,7 @@ Create("UICorner", {
     CornerRadius = UDim.new(0, 7)
 }, LogScroll)
 
-local LogLayout = Create("UIListLayout", {
+Create("UIListLayout", {
     Padding = UDim.new(0, 4),
     SortOrder = Enum.SortOrder.LayoutOrder
 }, LogScroll)
@@ -452,7 +457,7 @@ end
 ClearLogsButton.MouseButton1Click:Connect(ClearLogs)
 
 --==================================================
--- FARM PAGE
+-- FARM PAGE - START
 --==================================================
 
 local StartButton = Create("TextButton", {
@@ -473,12 +478,93 @@ Create("UICorner", {
 }, StartButton)
 
 --==================================================
--- PACK SCAN
+-- EVENT 2 PACK - SEPARATE
+--==================================================
+
+local EventFrame = Create("Frame", {
+    Name = "EventSettings",
+    Size = UDim2.new(1, -20, 0, 42),
+    Position = UDim2.new(0, 10, 0, 60),
+    BackgroundColor3 = PANEL2,
+    BorderSizePixel = 0,
+    ZIndex = 30
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, EventFrame)
+
+local EventTitle = Create("TextLabel", {
+    Size = UDim2.new(1, -120, 1, 0),
+    Position = UDim2.new(0, 12, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "Event 2 Pack",
+    TextColor3 = WHITE,
+    TextSize = 13,
+    Font = Enum.Font.GothamMedium,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 31
+}, EventFrame)
+
+local EventStatus = Create("TextLabel", {
+    Size = UDim2.new(0, 55, 1, 0),
+    Position = UDim2.new(1, -65, 0, 0),
+    BackgroundTransparency = 1,
+    TextSize = 12,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 31
+}, EventFrame)
+
+local EventButton = Create("TextButton", {
+    Size = UDim2.new(1, 0, 1, 0),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    Text = "",
+    AutoButtonColor = false,
+    ZIndex = 32
+}, EventFrame)
+
+local function UpdateEvent2()
+    if ToggleStates["Event 2 Pack"] then
+        EventStatus.Text = "ON"
+        EventStatus.TextColor3 = GREEN
+    else
+        EventStatus.Text = "OFF"
+        EventStatus.TextColor3 = RED
+    end
+end
+
+UpdateEvent2()
+
+EventButton.MouseEnter:Connect(function()
+    EventFrame.BackgroundColor3 = HOVER
+end)
+
+EventButton.MouseLeave:Connect(function()
+    EventFrame.BackgroundColor3 = PANEL2
+end)
+
+EventButton.MouseButton1Click:Connect(function()
+    ToggleStates["Event 2 Pack"] =
+        not ToggleStates["Event 2 Pack"]
+
+    UpdateEvent2()
+
+    if ToggleStates["Event 2 Pack"] then
+        AddLog("Event 2 Pack: ON")
+    else
+        AddLog("Event 2 Pack: OFF")
+    end
+end)
+
+--==================================================
+-- SCAN BUTTON
 --==================================================
 
 local ScanButton = Create("TextButton", {
+    Name = "ScanPacks",
     Size = UDim2.new(0, 115, 0, 34),
-    Position = UDim2.new(0, 10, 0, 60),
+    Position = UDim2.new(0, 10, 0, 112),
     BackgroundColor3 = BUTTON,
     BorderSizePixel = 0,
     Text = "SCAN PACKS",
@@ -495,7 +581,7 @@ Create("UICorner", {
 
 local PackCountLabel = Create("TextLabel", {
     Size = UDim2.new(1, -135, 0, 34),
-    Position = UDim2.new(0, 130, 0, 60),
+    Position = UDim2.new(0, 130, 0, 112),
     BackgroundTransparency = 1,
     Text = "0 packs found",
     TextColor3 = GRAY,
@@ -505,10 +591,14 @@ local PackCountLabel = Create("TextLabel", {
     ZIndex = 30
 }, FarmPage)
 
+--==================================================
+-- PACK SCROLL
+--==================================================
+
 local PackScroll = Create("ScrollingFrame", {
     Name = "PackScroll",
-    Size = UDim2.new(1, -20, 1, -105),
-    Position = UDim2.new(0, 10, 0, 100),
+    Size = UDim2.new(1, -20, 1, -158),
+    Position = UDim2.new(0, 10, 0, 152),
     BackgroundColor3 = PANEL2,
     BorderSizePixel = 0,
     ScrollBarThickness = 4,
@@ -521,37 +611,43 @@ Create("UICorner", {
     CornerRadius = UDim.new(0, 7)
 }, PackScroll)
 
-local PackLayout = Create("UIListLayout", {
-    Padding = UDim.new(0, 5),
-    SortOrder = Enum.SortOrder.Name
+--==================================================
+-- GRID LAYOUT
+--==================================================
+
+local PackGrid = Create("UIGridLayout", {
+    CellSize = UDim2.new(0.31, 0, 0, 40),
+    CellPadding = UDim2.new(0.025, 0, 0, 7),
+    SortOrder = Enum.SortOrder.Name,
+    HorizontalAlignment = Enum.HorizontalAlignment.Left,
+    VerticalAlignment = Enum.VerticalAlignment.Top
 }, PackScroll)
 
 Create("UIPadding", {
-    PaddingTop = UDim.new(0, 7),
-    PaddingBottom = UDim.new(0, 7),
-    PaddingLeft = UDim.new(0, 7),
-    PaddingRight = UDim.new(0, 7)
+    PaddingTop = UDim.new(0, 8),
+    PaddingBottom = UDim.new(0, 8),
+    PaddingLeft = UDim.new(0, 8),
+    PaddingRight = UDim.new(0, 8)
 }, PackScroll)
-
---==================================================
--- PACK TOGGLE
---==================================================
 
 local PackButtons = {}
 
+--==================================================
+-- CREATE PACK TOGGLE
+--==================================================
+
 local function CreatePackToggle(PackName)
+
     if PackButtons[PackName] then
         return
     end
 
     local Button = Create("TextButton", {
         Name = PackName,
-        Size = UDim2.new(1, -5, 0, 36),
         BackgroundColor3 = BUTTON,
         BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
-        LayoutOrder = 1,
         ZIndex = 30
     }, PackScroll)
 
@@ -560,12 +656,12 @@ local function CreatePackToggle(PackName)
     }, Button)
 
     local Label = Create("TextLabel", {
-        Size = UDim2.new(1, -65, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
+        Size = UDim2.new(1, -55, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
         BackgroundTransparency = 1,
         Text = PackName,
         TextColor3 = WHITE,
-        TextSize = 12,
+        TextSize = 11,
         Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
@@ -573,22 +669,28 @@ local function CreatePackToggle(PackName)
     }, Button)
 
     local Indicator = Create("TextLabel", {
-        Size = UDim2.new(0, 50, 1, 0),
-        Position = UDim2.new(1, -55, 0, 0),
+        Size = UDim2.new(0, 42, 1, 0),
+        Position = UDim2.new(1, -45, 0, 0),
         BackgroundTransparency = 1,
-        TextSize = 11,
+        TextSize = 10,
         Font = Enum.Font.GothamBold,
         ZIndex = 31
     }, Button)
 
     local function Update()
+
         if ToggleStates[PackName] then
+
             Indicator.Text = "ON"
             Indicator.TextColor3 = GREEN
+
         else
+
             Indicator.Text = "OFF"
             Indicator.TextColor3 = RED
+
         end
+
     end
 
     Update()
@@ -602,50 +704,68 @@ local function CreatePackToggle(PackName)
     end)
 
     Button.MouseButton1Click:Connect(function()
-        ToggleStates[PackName] = not ToggleStates[PackName]
+
+        ToggleStates[PackName] =
+            not ToggleStates[PackName]
+
         Update()
+
     end)
 
     PackButtons[PackName] = Button
 end
 
 --==================================================
--- SCAN ALL PACKS
+-- SCAN PACKS
 --==================================================
 
 local function ScanPacks()
-    local PotentialCards = ReplicatedStorage:FindFirstChild("PotentialCards")
+
+    local PotentialCards =
+        ReplicatedStorage:FindFirstChild("PotentialCards")
 
     if not PotentialCards then
-        PackCountLabel.Text = "PotentialCards not found"
+
+        PackCountLabel.Text =
+            "PotentialCards not found"
+
         AddLog("ERROR: PotentialCards")
+
         return
-    end
-
-    local Found = {}
-
-    for _, Object in ipairs(PotentialCards:GetChildren()) do
-        if Object:IsA("Folder") then
-            local PackName = Object.Name
-
-            Found[PackName] = true
-            AllowedPacks[PackName] = true
-
-            if ToggleStates[PackName] == nil then
-                ToggleStates[PackName] = false
-            end
-
-            CreatePackToggle(PackName)
-        end
     end
 
     local Count = 0
 
-    for _ in pairs(Found) do
-        Count += 1
+    for _, Object in ipairs(PotentialCards:GetChildren()) do
+
+        if Object:IsA("Folder") then
+
+            local PackName = Object.Name
+
+            -- Không cho các folder hệ thống
+            -- xuất hiện như pack farm
+            if PackName ~= "ScalingUnits"
+                and PackName ~= "Crafted"
+                and PackName ~= "Light"
+                and PackName ~= "Dark"
+                and PackName ~= "Festival"
+                and PackName ~= "Manga" then
+
+                AllowedPacks[PackName] = true
+
+                if ToggleStates[PackName] == nil then
+                    ToggleStates[PackName] = false
+                end
+
+                CreatePackToggle(PackName)
+
+                Count += 1
+            end
+        end
     end
 
-    PackCountLabel.Text = tostring(Count) .. " packs found"
+    PackCountLabel.Text =
+        tostring(Count) .. " packs found"
 
     AddLog(
         "Scanned: " ..
@@ -671,7 +791,9 @@ end)
 --==================================================
 
 local function IsPackSelected(PackName)
+
     return ToggleStates[PackName] == true
+
 end
 
 --==================================================
@@ -679,6 +801,8 @@ end
 --==================================================
 
 local function BuyAndRoll()
+
+    -- Event 2 Pack riêng
     local OfferCount
 
     if ToggleStates["Event 2 Pack"] then
@@ -688,46 +812,68 @@ local function BuyAndRoll()
     end
 
     local Success, Result = pcall(function()
-        return RequestConveyorOffer:InvokeServer(OfferCount)
+
+        return RequestConveyorOffer:InvokeServer(
+            OfferCount
+        )
+
     end)
 
     if not Success then
+
         AddLog("ERROR: Request")
+
         return
     end
 
     if typeof(Result) ~= "table" then
+
         AddLog("ERROR: Invalid")
+
         return
     end
 
     local SkippedPacks = {}
 
     for _, Offer in pairs(Result) do
+
         if typeof(Offer) ~= "table" then
             continue
         end
 
-        local OfferId = Offer.OfferId
-        local PackName = Offer.PackName
-        local Mutation = Offer.Mutation
+        local OfferId =
+            Offer.OfferId
+
+        local PackName =
+            Offer.PackName
+
+        local Mutation =
+            Offer.Mutation
 
         if not PackName then
+
             PackName =
                 Offer.Name
                 or Offer.Pack
                 or Offer.DisplayName
+
         end
 
         if not PackName then
+
             table.insert(
                 SkippedPacks,
                 "Unknown Pack"
             )
+
             continue
         end
 
         PackName = tostring(PackName)
+
+        --==================================================
+        -- SELECTED PACK
+        --==================================================
 
         if AllowedPacks[PackName]
             and IsPackSelected(PackName) then
@@ -738,46 +884,59 @@ local function BuyAndRoll()
             )
 
             local BuySuccess = pcall(function()
+
                 BuyPack:FireServer(
                     PackName,
                     Mutation,
                     OfferId
                 )
+
             end)
 
             if not BuySuccess then
+
                 AddLog("ERROR: Buy")
+
                 continue
             end
 
             task.wait(0.5)
 
             local RollSuccess = pcall(function()
+
                 SetRecoverPack:FireServer(
                     OfferId
                 )
+
             end)
 
             if RollSuccess then
+
                 AddLog(
                     "ROLLED: " ..
                     PackName
                 )
+
             else
+
                 AddLog("ERROR: Roll")
+
             end
 
             task.wait(0.2)
 
         else
+
             table.insert(
                 SkippedPacks,
                 PackName
             )
+
         end
     end
 
     if #SkippedPacks > 0 then
+
         AddLog(
             "Skip: " ..
             table.concat(
@@ -785,15 +944,18 @@ local function BuyAndRoll()
                 ", "
             )
         )
+
     end
 end
 
 --==================================================
--- FARM
+-- HAS SELECTED PACK
 --==================================================
 
 local function HasSelectedPack()
+
     for PackName, Enabled in pairs(ToggleStates) do
+
         if Enabled
             and PackName ~= "Anti-AFK"
             and PackName ~= "Event 2 Pack" then
@@ -801,13 +963,20 @@ local function HasSelectedPack()
             if AllowedPacks[PackName] then
                 return true
             end
+
         end
+
     end
 
     return false
 end
 
+--==================================================
+-- START FARM
+--==================================================
+
 local function StartFarm()
+
     if Running then
         return
     end
@@ -820,21 +989,36 @@ local function StartFarm()
     AddLog("Farm Started")
 
     task.spawn(function()
+
         while Running do
 
             if not HasSelectedPack() then
-                AddLog("ERROR: No Pack Selected")
+
+                AddLog(
+                    "ERROR: No Pack Selected"
+                )
+
                 task.wait(1)
+
             else
+
                 BuyAndRoll()
+
                 task.wait(Delay)
+
             end
 
         end
+
     end)
 end
 
+--==================================================
+-- STOP FARM
+--==================================================
+
 local function StopFarm()
+
     if not Running then
         return
     end
@@ -848,11 +1032,13 @@ local function StopFarm()
 end
 
 StartButton.MouseButton1Click:Connect(function()
+
     if Running then
         StopFarm()
     else
         StartFarm()
     end
+
 end)
 
 --==================================================
@@ -922,23 +1108,31 @@ Create("UICorner", {
 }, PlusButton)
 
 local function UpdateDelay()
+
     Delay = math.clamp(
         math.round(Delay * 10) / 10,
         0.1,
         10
     )
 
-    DelayValue.Text = string.format("%.1f", Delay) .. "s"
+    DelayValue.Text =
+        string.format("%.1f", Delay) .. "s"
 end
 
 MinusButton.MouseButton1Click:Connect(function()
+
     Delay -= 0.1
+
     UpdateDelay()
+
 end)
 
 PlusButton.MouseButton1Click:Connect(function()
+
     Delay += 0.1
+
     UpdateDelay()
+
 end)
 
 --==================================================
@@ -962,36 +1156,50 @@ Create("UICorner", {
     CornerRadius = UDim.new(0, 7)
 }, AntiAFKButton)
 
+local function UpdateAntiAFK()
+
+    if ToggleStates["Anti-AFK"] then
+
+        AntiAFKButton.Text =
+            "Anti-AFK: ON"
+
+        AntiAFKButton.TextColor3 =
+            GREEN
+
+    else
+
+        AntiAFKButton.Text =
+            "Anti-AFK: OFF"
+
+        AntiAFKButton.TextColor3 =
+            RED
+
+    end
+end
+
+UpdateAntiAFK()
+
 AntiAFKButton.MouseButton1Click:Connect(function()
+
     ToggleStates["Anti-AFK"] =
         not ToggleStates["Anti-AFK"]
 
-    if ToggleStates["Anti-AFK"] then
-        AntiAFKButton.Text = "Anti-AFK: ON"
-        AntiAFKButton.TextColor3 = GREEN
-    else
-        AntiAFKButton.Text = "Anti-AFK: OFF"
-        AntiAFKButton.TextColor3 = RED
-    end
+    UpdateAntiAFK()
+
 end)
 
-if ToggleStates["Anti-AFK"] then
-    AntiAFKButton.Text = "Anti-AFK: ON"
-    AntiAFKButton.TextColor3 = GREEN
-else
-    AntiAFKButton.Text = "Anti-AFK: OFF"
-    AntiAFKButton.TextColor3 = RED
-end
-
---==================================================
--- ANTI AFK
---==================================================
-
 Player.Idled:Connect(function()
+
     if ToggleStates["Anti-AFK"] then
+
         VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+
+        VirtualUser:ClickButton2(
+            Vector2.new()
+        )
+
     end
+
 end)
 
 --==================================================
@@ -1001,7 +1209,12 @@ end)
 local ShowButton = Create("TextButton", {
     Name = "ShowButton",
 
-    Size = UDim2.new(0, 48, 0, 48),
+    Size = UDim2.new(
+        0,
+        48,
+        0,
+        48
+    ),
 
     Position = UDim2.new(
         0,
@@ -1037,6 +1250,7 @@ local ShowDragStart
 local ShowStartPosition
 
 ShowButton.MouseButton1Down:Connect(function()
+
     ShowDragging = true
 
     ShowDragStart =
@@ -1044,14 +1258,17 @@ ShowButton.MouseButton1Down:Connect(function()
 
     ShowStartPosition =
         ShowButton.Position
+
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
+
     if not ShowDragging then
         return
     end
 
-    if Input.UserInputType ~= Enum.UserInputType.MouseMovement then
+    if Input.UserInputType ~=
+        Enum.UserInputType.MouseMovement then
         return
     end
 
@@ -1068,12 +1285,18 @@ UserInputService.InputChanged:Connect(function(Input)
         ShowStartPosition.Y.Scale,
         ShowStartPosition.Y.Offset + Delta.Y
     )
+
 end)
 
 UserInputService.InputEnded:Connect(function(Input)
-    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+    if Input.UserInputType ==
+        Enum.UserInputType.MouseButton1 then
+
         ShowDragging = false
+
     end
+
 end)
 
 --==================================================
@@ -1081,17 +1304,21 @@ end)
 --==================================================
 
 HideButton.MouseButton1Click:Connect(function()
+
     Main.Visible = false
     ShowButton.Visible = true
+
 end)
 
 ShowButton.MouseButton1Click:Connect(function()
+
     Main.Visible = true
     ShowButton.Visible = false
+
 end)
 
 --==================================================
--- INITIAL SCAN
+-- START
 --==================================================
 
 Main.Visible = true
@@ -1099,7 +1326,8 @@ ShowButton.Visible = false
 
 AddLog("Ready")
 
--- Tự scan ngay khi script chạy
 task.defer(function()
+
     ScanPacks()
+
 end)
