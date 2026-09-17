@@ -1,20 +1,19 @@
---// 1tap Pack Farm
---// Full rewritten version
+--==================================================
+-- 1TAP PACK FARM
+-- FIXED VERSION
+--==================================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService")
 
 local Player = Players.LocalPlayer
 
 --==================================================
--- CONFIG
+-- SETTINGS
 --==================================================
-
-local SettingsFile = "1tap_PackFarm_Settings.json"
 
 local Delay = 0.5
 local Running = false
@@ -28,59 +27,22 @@ local AllowedPacks = {}
 local PackButtons = {}
 local Logs = {}
 
-local LoadedSettings = {}
-
 --==================================================
--- SAFE FILE FUNCTIONS
+-- COLORS
 --==================================================
 
-local function CanUseFileAPI()
-    return type(readfile) == "function"
-        and type(writefile) == "function"
-        and type(isfile) == "function"
-end
+local BG = Color3.fromRGB(18, 18, 22)
+local PANEL = Color3.fromRGB(25, 25, 30)
+local PANEL2 = Color3.fromRGB(31, 31, 38)
+local BUTTON = Color3.fromRGB(38, 38, 46)
+local HOVER = Color3.fromRGB(48, 48, 58)
 
-local function LoadSettings()
-    if not CanUseFileAPI() then
-        return
-    end
+local WHITE = Color3.fromRGB(235, 235, 240)
+local GRAY = Color3.fromRGB(150, 150, 160)
 
-    local success, result = pcall(function()
-        if not isfile(SettingsFile) then
-            return nil
-        end
-
-        return HttpService:JSONDecode(readfile(SettingsFile))
-    end)
-
-    if success and type(result) == "table" then
-        LoadedSettings = result
-
-        if type(result.Delay) == "number" then
-            Delay = math.clamp(result.Delay, 0.1, 10)
-        end
-
-        if result.Event2Pack ~= nil then
-            ToggleStates["Event 2 Pack"] = result.Event2Pack == true
-        end
-
-        if result.AntiAFK ~= nil then
-            ToggleStates["Anti-AFK"] = result.AntiAFK == true
-        end
-    end
-end
-
-LoadSettings()
-
---==================================================
--- REMOTES
---==================================================
-
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-
-local RequestConveyorOffer = Remotes:WaitForChild("RequestConveyorOffer")
-local BuyPack = Remotes:WaitForChild("BuyPack")
-local SetRecoverPack = Remotes:WaitForChild("SetRecoverPack")
+local GREEN = Color3.fromRGB(70, 200, 110)
+local RED = Color3.fromRGB(220, 70, 70)
+local YELLOW = Color3.fromRGB(235, 190, 70)
 
 --==================================================
 -- REMOVE OLD GUI
@@ -95,10 +57,11 @@ pcall(function()
 end)
 
 --==================================================
--- CREATE HELPER
+-- CREATE
 --==================================================
 
 local function Create(ClassName, Properties, Parent)
+
     local Object = Instance.new(ClassName)
 
     for Property, Value in pairs(Properties) do
@@ -113,7 +76,7 @@ local function Create(ClassName, Properties, Parent)
 end
 
 --==================================================
--- GUI
+-- SCREEN GUI
 --==================================================
 
 local ScreenGui = Create("ScreenGui", {
@@ -123,16 +86,22 @@ local ScreenGui = Create("ScreenGui", {
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 }, CoreGui)
 
+--==================================================
+-- MAIN
+--==================================================
+
 local Main = Create("Frame", {
     Name = "Main",
-    Size = UDim2.fromOffset(600, 400),
+    Size = UDim2.new(0, 600, 0, 400),
     Position = UDim2.new(0.5, -300, 0.5, -200),
-    BackgroundColor3 = Color3.fromRGB(18, 18, 22),
-    BorderSizePixel = 0
+    BackgroundColor3 = BG,
+    BorderSizePixel = 0,
+    Active = true,
+    ZIndex = 10
 }, ScreenGui)
 
 Create("UICorner", {
-    CornerRadius = UDim.new(0, 8)
+    CornerRadius = UDim.new(0, 10)
 }, Main)
 
 --==================================================
@@ -140,45 +109,103 @@ Create("UICorner", {
 --==================================================
 
 local TopBar = Create("Frame", {
-    Size = UDim2.new(1, 0, 0, 42),
-    BackgroundColor3 = Color3.fromRGB(27, 27, 33),
-    BorderSizePixel = 0
+    Name = "TopBar",
+    Size = UDim2.new(1, 0, 0, 45),
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    ZIndex = 20
 }, Main)
 
 Create("UICorner", {
-    CornerRadius = UDim.new(0, 8)
+    CornerRadius = UDim.new(0, 10)
 }, TopBar)
 
-local DragBar = Create("Frame", {
-    Size = UDim2.new(1, -100, 1, 0),
-    BackgroundTransparency = 1
-}, TopBar)
-
-local Title = Create("TextLabel", {
-    Size = UDim2.new(1, 0, 1, 0),
+Create("TextLabel", {
+    Size = UDim2.new(0, 250, 1, 0),
+    Position = UDim2.new(0, 15, 0, 0),
     BackgroundTransparency = 1,
     Text = "1tap Pack Farm",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
+    TextColor3 = WHITE,
+    TextSize = 17,
     Font = Enum.Font.GothamBold,
-    TextSize = 16,
     TextXAlignment = Enum.TextXAlignment.Left,
-    Position = UDim2.fromOffset(14, 0)
-}, DragBar)
-
-local HideButton = Create("TextButton", {
-    Size = UDim2.fromOffset(36, 30),
-    Position = UDim2.new(1, -42, 0, 6),
-    BackgroundColor3 = Color3.fromRGB(40, 40, 48),
-    BorderSizePixel = 0,
-    Text = "—",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 18,
-    AutoButtonColor = true
+    ZIndex = 30
 }, TopBar)
 
+--==================================================
+-- DRAG BAR
+--==================================================
+
+local DragBar = Create("TextButton", {
+    Name = "DragBar",
+    Size = UDim2.new(1, -55, 0, 45),
+    Position = UDim2.new(0, 0, 0, 0),
+    BackgroundTransparency = 1,
+    Text = "",
+    AutoButtonColor = false,
+    Active = true,
+    ZIndex = 100
+}, Main)
+
+local MainDragging = false
+local MainDragStart
+local MainStartPosition
+
+DragBar.MouseButton1Down:Connect(function()
+    MainDragging = true
+    MainDragStart = UserInputService:GetMouseLocation()
+    MainStartPosition = Main.Position
+end)
+
+UserInputService.InputChanged:Connect(function(Input)
+
+    if not MainDragging then
+        return
+    end
+
+    if Input.UserInputType ~= Enum.UserInputType.MouseMovement then
+        return
+    end
+
+    local MousePosition = UserInputService:GetMouseLocation()
+    local Delta = MousePosition - MainDragStart
+
+    Main.Position = UDim2.new(
+        MainStartPosition.X.Scale,
+        MainStartPosition.X.Offset + Delta.X,
+        MainStartPosition.Y.Scale,
+        MainStartPosition.Y.Offset + Delta.Y
+    )
+end)
+
+UserInputService.InputEnded:Connect(function(Input)
+
+    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+        MainDragging = false
+    end
+
+end)
+
+--==================================================
+-- HIDE BUTTON
+--==================================================
+
+local HideButton = Create("TextButton", {
+    Name = "HideButton",
+    Size = UDim2.new(0, 40, 0, 35),
+    Position = UDim2.new(1, -45, 0, 5),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "—",
+    TextColor3 = WHITE,
+    TextSize = 20,
+    Font = Enum.Font.GothamBold,
+    AutoButtonColor = false,
+    ZIndex = 200
+}, Main)
+
 Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
+    CornerRadius = UDim.new(0, 7)
 }, HideButton)
 
 --==================================================
@@ -186,17 +213,64 @@ Create("UICorner", {
 --==================================================
 
 local Sidebar = Create("Frame", {
-    Size = UDim2.fromOffset(125, 358),
-    Position = UDim2.fromOffset(0, 42),
-    BackgroundColor3 = Color3.fromRGB(22, 22, 27),
-    BorderSizePixel = 0
+    Name = "Sidebar",
+    Size = UDim2.new(0, 145, 1, -55),
+    Position = UDim2.new(0, 10, 0, 50),
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    ZIndex = 20
 }, Main)
 
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 8)
+}, Sidebar)
+
+local function CreateSideButton(Text, Y)
+
+    local Button = Create("TextButton", {
+        Size = UDim2.new(1, -20, 0, 40),
+        Position = UDim2.new(0, 10, 0, Y),
+        BackgroundColor3 = BUTTON,
+        BorderSizePixel = 0,
+        Text = Text,
+        TextColor3 = WHITE,
+        TextSize = 14,
+        Font = Enum.Font.GothamMedium,
+        AutoButtonColor = false,
+        ZIndex = 30
+    }, Sidebar)
+
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, 7)
+    }, Button)
+
+    Button.MouseEnter:Connect(function()
+        Button.BackgroundColor3 = HOVER
+    end)
+
+    Button.MouseLeave:Connect(function()
+        Button.BackgroundColor3 = BUTTON
+    end)
+
+    return Button
+end
+
+local FarmTab = CreateSideButton("Farm", 15)
+local EventsTab = CreateSideButton("Events", 65)
+local SettingsTab = CreateSideButton("Settings", 115)
+local LogsTab = CreateSideButton("Logs", 165)
+
+--==================================================
+-- CONTENT
+--==================================================
+
 local Content = Create("Frame", {
-    Size = UDim2.new(1, -125, 1, -42),
-    Position = UDim2.fromOffset(125, 42),
-    BackgroundColor3 = Color3.fromRGB(18, 18, 22),
-    BorderSizePixel = 0
+    Name = "Content",
+    Size = UDim2.new(1, -165, 1, -55),
+    Position = UDim2.new(0, 155, 0, 50),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ZIndex = 20
 }, Main)
 
 --==================================================
@@ -204,612 +278,138 @@ local Content = Create("Frame", {
 --==================================================
 
 local FarmPage = Create("Frame", {
+    Name = "FarmPage",
     Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    Visible = true,
+    ZIndex = 20
 }, Content)
 
 local EventsPage = Create("Frame", {
+    Name = "EventsPage",
     Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
-    Visible = false
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
 }, Content)
 
 local SettingsPage = Create("Frame", {
+    Name = "SettingsPage",
     Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
-    Visible = false
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
 }, Content)
 
 local LogsPage = Create("Frame", {
+    Name = "LogsPage",
     Size = UDim2.new(1, 0, 1, 0),
-    BackgroundTransparency = 1,
-    Visible = false
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 20
 }, Content)
 
---==================================================
--- TAB SYSTEM
---==================================================
-
-local Pages = {
-    Farm = FarmPage,
-    Events = EventsPage,
-    Settings = SettingsPage,
-    Logs = LogsPage
-}
-
-local TabButtons = {}
-
-local function ShowPage(Name)
-    for PageName, Page in pairs(Pages) do
-        Page.Visible = PageName == Name
-    end
-
-    for ButtonName, Button in pairs(TabButtons) do
-        if ButtonName == Name then
-            Button.BackgroundColor3 = Color3.fromRGB(55, 55, 68)
-        else
-            Button.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-        end
-    end
-end
-
-local function CreateTab(Name, Text, Y)
-    local Button = Create("TextButton", {
-        Size = UDim2.new(1, -16, 0, 40),
-        Position = UDim2.fromOffset(8, Y),
-        BackgroundColor3 = Color3.fromRGB(28, 28, 34),
-        BorderSizePixel = 0,
-        Text = Text,
-        TextColor3 = Color3.fromRGB(230, 230, 235),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 13
-    }, Sidebar)
+for _, Page in ipairs({
+    FarmPage,
+    EventsPage,
+    SettingsPage,
+    LogsPage
+}) do
 
     Create("UICorner", {
-        CornerRadius = UDim.new(0, 6)
-    }, Button)
+        CornerRadius = UDim.new(0, 8)
+    }, Page)
 
-    Button.MouseButton1Click:Connect(function()
-        ShowPage(Name)
-    end)
-
-    TabButtons[Name] = Button
-
-    return Button
-end
-
-CreateTab("Farm", "Farm", 12)
-CreateTab("Events", "Events", 58)
-CreateTab("Settings", "Settings", 104)
-CreateTab("Logs", "Logs", 150)
-
-ShowPage("Farm")
-
---==================================================
--- FARM PAGE
---==================================================
-
-local FarmTitle = Create("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 30),
-    Position = UDim2.fromOffset(10, 8),
-    BackgroundTransparency = 1,
-    Text = "Pack Farm",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 17,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, FarmPage)
-
-local StartButton = Create("TextButton", {
-    Size = UDim2.fromOffset(130, 34),
-    Position = UDim2.fromOffset(10, 43),
-    BackgroundColor3 = Color3.fromRGB(45, 145, 75),
-    BorderSizePixel = 0,
-    Text = "START FARM",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 13
-}, FarmPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
-}, StartButton)
-
-local SearchFrame = Create("Frame", {
-    Size = UDim2.new(1, -160, 0, 34),
-    Position = UDim2.fromOffset(150, 43),
-    BackgroundColor3 = Color3.fromRGB(30, 30, 36),
-    BorderSizePixel = 0
-}, FarmPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
-}, SearchFrame)
-
-local SearchIcon = Create("TextLabel", {
-    Size = UDim2.fromOffset(30, 34),
-    BackgroundTransparency = 1,
-    Text = "🔍",
-    TextColor3 = Color3.fromRGB(180, 180, 185),
-    Font = Enum.Font.Gotham,
-    TextSize = 14
-}, SearchFrame)
-
-local SearchBox = Create("TextBox", {
-    Size = UDim2.new(1, -35, 1, 0),
-    Position = UDim2.fromOffset(32, 0),
-    BackgroundTransparency = 1,
-    Text = "",
-    PlaceholderText = "Search pack...",
-    PlaceholderColor3 = Color3.fromRGB(130, 130, 135),
-    TextColor3 = Color3.fromRGB(235, 235, 240),
-    Font = Enum.Font.Gotham,
-    TextSize = 13,
-    ClearTextOnFocus = false
-}, SearchFrame)
-
-local ScanButton = Create("TextButton", {
-    Size = UDim2.fromOffset(100, 30),
-    Position = UDim2.fromOffset(10, 85),
-    BackgroundColor3 = Color3.fromRGB(45, 45, 55),
-    BorderSizePixel = 0,
-    Text = "SCAN PACKS",
-    TextColor3 = Color3.fromRGB(240, 240, 240),
-    Font = Enum.Font.GothamBold,
-    TextSize = 11
-}, FarmPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 5)
-}, ScanButton)
-
-local PackCountLabel = Create("TextLabel", {
-    Size = UDim2.fromOffset(250, 30),
-    Position = UDim2.fromOffset(120, 85),
-    BackgroundTransparency = 1,
-    Text = "Packs: 0",
-    TextColor3 = Color3.fromRGB(170, 170, 180),
-    Font = Enum.Font.Gotham,
-    TextSize = 12,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, FarmPage)
-
-local PackScroll = Create("ScrollingFrame", {
-    Size = UDim2.new(1, -20, 1, -128),
-    Position = UDim2.fromOffset(10, 118),
-    BackgroundColor3 = Color3.fromRGB(23, 23, 28),
-    BorderSizePixel = 0,
-    ScrollBarThickness = 5,
-    CanvasSize = UDim2.fromOffset(0, 0),
-    AutomaticCanvasSize = Enum.AutomaticSize.Y
-}, FarmPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
-}, PackScroll)
-
-local Grid = Create("UIGridLayout", {
-    CellSize = UDim2.fromOffset(145, 36),
-    CellPadding = UDim2.fromOffset(7, 7),
-    SortOrder = Enum.SortOrder.LayoutOrder
-}, PackScroll)
-
---==================================================
--- PACK TOGGLE
---==================================================
-
-local function CreatePackToggle(PackName)
-    if PackButtons[PackName] then
-        return
-    end
-
-    if ToggleStates[PackName] == nil then
-        ToggleStates[PackName] = false
-    end
-
-    local Button = Create("TextButton", {
-        Size = UDim2.fromOffset(145, 36),
-        BackgroundColor3 = ToggleStates[PackName]
-            and Color3.fromRGB(45, 125, 70)
-            or Color3.fromRGB(38, 38, 46),
-        BorderSizePixel = 0,
-        Text = PackName,
-        TextColor3 = Color3.fromRGB(235, 235, 240),
-        Font = Enum.Font.GothamMedium,
-        TextSize = 11,
-        TextTruncate = Enum.TextTruncate.AtEnd
-    }, PackScroll)
-
-    Create("UICorner", {
-        CornerRadius = UDim.new(0, 6)
-    }, Button)
-
-    Button.MouseButton1Click:Connect(function()
-        ToggleStates[PackName] = not ToggleStates[PackName]
-
-        if ToggleStates[PackName] then
-            Button.BackgroundColor3 = Color3.fromRGB(45, 125, 70)
-        else
-            Button.BackgroundColor3 = Color3.fromRGB(38, 38, 46)
-        end
-    end)
-
-    PackButtons[PackName] = Button
 end
 
 --==================================================
--- PACK SCAN
+-- PAGE SWITCH
 --==================================================
 
-local function IsExcludedPack(Name)
-    local Lower = string.lower(Name)
+local function ShowPage(Page)
 
-    local Excluded = {
-        "scalingunits",
-        "crafted",
-        "light",
-        "dark",
-        "festival",
-        "manga"
-    }
+    FarmPage.Visible = false
+    EventsPage.Visible = false
+    SettingsPage.Visible = false
+    LogsPage.Visible = false
 
-    for _, Word in ipairs(Excluded) do
-        if Lower == Word or string.find(Lower, Word, 1, true) then
-            return true
-        end
-    end
-
-    return false
+    Page.Visible = true
 end
 
-local function ApplySavedPackStates()
-    if type(LoadedSettings.SelectedPacks) ~= "table" then
-        return
-    end
-
-    for PackName, State in pairs(LoadedSettings.SelectedPacks) do
-        if type(PackName) == "string" then
-            ToggleStates[PackName] = State == true
-        end
-    end
-end
-
-local function ScanPacks()
-    local PotentialCards = ReplicatedStorage:FindFirstChild("PotentialCards")
-
-    if not PotentialCards then
-        PackCountLabel.Text = "Packs: 0 | PotentialCards missing"
-        return
-    end
-
-    for PackName, Button in pairs(PackButtons) do
-        if Button then
-            Button:Destroy()
-        end
-    end
-
-    PackButtons = {}
-    AllowedPacks = {}
-
-    local Count = 0
-
-    for _, Object in ipairs(PotentialCards:GetChildren()) do
-        local PackName = Object.Name
-
-        if not IsExcludedPack(PackName) then
-            AllowedPacks[PackName] = true
-
-            if ToggleStates[PackName] == nil then
-                ToggleStates[PackName] = false
-            end
-
-            Count = Count + 1
-        end
-    end
-
-    ApplySavedPackStates()
-
-    for PackName in pairs(AllowedPacks) do
-        CreatePackToggle(PackName)
-    end
-
-    PackCountLabel.Text = "Packs: " .. tostring(Count)
-end
-
---==================================================
--- SEARCH
---==================================================
-
-local function UpdateSearch()
-    local Query = string.lower(SearchBox.Text or "")
-
-    for PackName, Button in pairs(PackButtons) do
-        if Button then
-            local Match = Query == ""
-                or string.find(string.lower(PackName), Query, 1, true) ~= nil
-
-            Button.Visible = Match
-        end
-    end
-end
-
-SearchBox:GetPropertyChangedSignal("Text"):Connect(UpdateSearch)
-
-ScanButton.MouseButton1Click:Connect(function()
-    ScanPacks()
-    UpdateSearch()
+FarmTab.MouseButton1Click:Connect(function()
+    ShowPage(FarmPage)
 end)
 
---==================================================
--- EVENT PAGE
---==================================================
-
-local EventTitle = Create("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 30),
-    Position = UDim2.fromOffset(10, 8),
-    BackgroundTransparency = 1,
-    Text = "Events",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 17,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, EventsPage)
-
-local EventCard = Create("Frame", {
-    Size = UDim2.new(1, -20, 0, 90),
-    Position = UDim2.fromOffset(10, 48),
-    BackgroundColor3 = Color3.fromRGB(28, 28, 34),
-    BorderSizePixel = 0
-}, EventsPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 7)
-}, EventCard)
-
-local EventName = Create("TextLabel", {
-    Size = UDim2.new(1, -120, 0, 30),
-    Position = UDim2.fromOffset(12, 10),
-    BackgroundTransparency = 1,
-    Text = "Event 2 Pack",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 14,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, EventCard)
-
-local EventDescription = Create("TextLabel", {
-    Size = UDim2.new(1, -120, 0, 35),
-    Position = UDim2.fromOffset(12, 40),
-    BackgroundTransparency = 1,
-    Text = "Request 2 conveyor offers instead of 1.",
-    TextColor3 = Color3.fromRGB(150, 150, 160),
-    Font = Enum.Font.Gotham,
-    TextSize = 11,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, EventCard)
-
-local EventToggle = Create("TextButton", {
-    Size = UDim2.fromOffset(80, 32),
-    Position = UDim2.new(1, -92, 0.5, -16),
-    BackgroundColor3 = ToggleStates["Event 2 Pack"]
-        and Color3.fromRGB(45, 125, 70)
-        or Color3.fromRGB(45, 45, 55),
-    BorderSizePixel = 0,
-    Text = ToggleStates["Event 2 Pack"] and "ON" or "OFF",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 12
-}, EventCard)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
-}, EventToggle)
-
-EventToggle.MouseButton1Click:Connect(function()
-    ToggleStates["Event 2 Pack"] = not ToggleStates["Event 2 Pack"]
-
-    EventToggle.Text = ToggleStates["Event 2 Pack"] and "ON" or "OFF"
-
-    if ToggleStates["Event 2 Pack"] then
-        EventToggle.BackgroundColor3 = Color3.fromRGB(45, 125, 70)
-    else
-        EventToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    end
+EventsTab.MouseButton1Click:Connect(function()
+    ShowPage(EventsPage)
 end)
 
---==================================================
--- SETTINGS PAGE
---==================================================
-
-local SettingsTitle = Create("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 30),
-    Position = UDim2.fromOffset(10, 8),
-    BackgroundTransparency = 1,
-    Text = "Settings",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 17,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, SettingsPage)
-
-local DelayLabel = Create("TextLabel", {
-    Size = UDim2.fromOffset(200, 30),
-    Position = UDim2.fromOffset(10, 50),
-    BackgroundTransparency = 1,
-    Text = "Farm Delay",
-    TextColor3 = Color3.fromRGB(230, 230, 235),
-    Font = Enum.Font.GothamMedium,
-    TextSize = 13,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, SettingsPage)
-
-local DelayValue = Create("TextLabel", {
-    Size = UDim2.fromOffset(80, 30),
-    Position = UDim2.fromOffset(210, 50),
-    BackgroundColor3 = Color3.fromRGB(30, 30, 36),
-    BorderSizePixel = 0,
-    Text = string.format("%.1f", Delay),
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 13
-}, SettingsPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 5)
-}, DelayValue)
-
-local MinusButton = Create("TextButton", {
-    Size = UDim2.fromOffset(35, 30),
-    Position = UDim2.fromOffset(300, 50),
-    BackgroundColor3 = Color3.fromRGB(45, 45, 55),
-    BorderSizePixel = 0,
-    Text = "-",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 16
-}, SettingsPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 5)
-}, MinusButton)
-
-local PlusButton = Create("TextButton", {
-    Size = UDim2.fromOffset(35, 30),
-    Position = UDim2.fromOffset(340, 50),
-    BackgroundColor3 = Color3.fromRGB(45, 45, 55),
-    BorderSizePixel = 0,
-    Text = "+",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 16
-}, SettingsPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 5)
-}, PlusButton)
-
-local AntiAFKLabel = Create("TextLabel", {
-    Size = UDim2.fromOffset(200, 30),
-    Position = UDim2.fromOffset(10, 95),
-    BackgroundTransparency = 1,
-    Text = "Anti-AFK",
-    TextColor3 = Color3.fromRGB(230, 230, 235),
-    Font = Enum.Font.GothamMedium,
-    TextSize = 13,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, SettingsPage)
-
-local AntiAFKButton = Create("TextButton", {
-    Size = UDim2.fromOffset(80, 30),
-    Position = UDim2.fromOffset(210, 95),
-    BackgroundColor3 = ToggleStates["Anti-AFK"]
-        and Color3.fromRGB(45, 125, 70)
-        or Color3.fromRGB(45, 45, 55),
-    BorderSizePixel = 0,
-    Text = ToggleStates["Anti-AFK"] and "ON" or "OFF",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 12
-}, SettingsPage)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(0, 5)
-}, AntiAFKButton)
-
---==================================================
--- SHOW BUTTON
---==================================================
-
-local ShowButton = Create("TextButton", {
-    Name = "ShowButton",
-    Size = UDim2.fromOffset(48, 48),
-    Position = UDim2.new(0, 10, 0.5, -24),
-    BackgroundColor3 = Color3.fromRGB(35, 35, 43),
-    BorderSizePixel = 0,
-    Text = "1T",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 14,
-    Visible = false
-}, ScreenGui)
-
-Create("UICorner", {
-    CornerRadius = UDim.new(1, 0)
-}, ShowButton)
-
---==================================================
--- SETTINGS CONTROLS
---==================================================
-
-local function UpdateDelayDisplay()
-    DelayValue.Text = string.format("%.1f", Delay)
-end
-
-MinusButton.MouseButton1Click:Connect(function()
-    Delay = math.clamp(Delay - 0.1, 0.1, 10)
-    UpdateDelayDisplay()
+SettingsTab.MouseButton1Click:Connect(function()
+    ShowPage(SettingsPage)
 end)
 
-PlusButton.MouseButton1Click:Connect(function()
-    Delay = math.clamp(Delay + 0.1, 0.1, 10)
-    UpdateDelayDisplay()
-end)
-
-AntiAFKButton.MouseButton1Click:Connect(function()
-    ToggleStates["Anti-AFK"] = not ToggleStates["Anti-AFK"]
-
-    AntiAFKButton.Text = ToggleStates["Anti-AFK"] and "ON" or "OFF"
-
-    if ToggleStates["Anti-AFK"] then
-        AntiAFKButton.BackgroundColor3 = Color3.fromRGB(45, 125, 70)
-    else
-        AntiAFKButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-    end
+LogsTab.MouseButton1Click:Connect(function()
+    ShowPage(LogsPage)
 end)
 
 --==================================================
 -- LOG PAGE
 --==================================================
 
-local LogsTitle = Create("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 30),
-    Position = UDim2.fromOffset(10, 8),
-    BackgroundTransparency = 1,
-    Text = "Logs",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 17,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, LogsPage)
-
 local LogScroll = Create("ScrollingFrame", {
-    Size = UDim2.new(1, -20, 1, -55),
-    Position = UDim2.fromOffset(10, 45),
-    BackgroundColor3 = Color3.fromRGB(23, 23, 28),
+    Name = "LogScroll",
+    Size = UDim2.new(1, -20, 1, -65),
+    Position = UDim2.new(0, 10, 0, 10),
+    BackgroundColor3 = PANEL2,
     BorderSizePixel = 0,
-    ScrollBarThickness = 5,
-    CanvasSize = UDim2.fromOffset(0, 0),
-    AutomaticCanvasSize = Enum.AutomaticSize.Y
+    ScrollBarThickness = 4,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    ZIndex = 30
 }, LogsPage)
 
 Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
+    CornerRadius = UDim.new(0, 7)
 }, LogScroll)
 
-local LogLayout = Create("UIListLayout", {
-    Padding = UDim.new(0, 3),
+Create("UIListLayout", {
+    Padding = UDim.new(0, 4),
     SortOrder = Enum.SortOrder.LayoutOrder
 }, LogScroll)
 
-local function AddLog(Message)
-    local Time = os.date("%H:%M:%S")
+Create("UIPadding", {
+    PaddingTop = UDim.new(0, 7),
+    PaddingBottom = UDim.new(0, 7),
+    PaddingLeft = UDim.new(0, 7),
+    PaddingRight = UDim.new(0, 7)
+}, LogScroll)
 
-    table.insert(Logs, {
-        Time = Time,
-        Message = tostring(Message)
-    })
+local function GetLogColor(Text)
 
-    while #Logs > 100 do
+    if string.find(Text, "ERROR", 1, true) then
+        return RED
+    end
+
+    if string.find(Text, "Buying", 1, true) then
+        return YELLOW
+    end
+
+    if string.find(Text, "ROLLED", 1, true) then
+        return GREEN
+    end
+
+    return WHITE
+end
+
+local function AddLog(Text)
+
+    table.insert(Logs, tostring(Text))
+
+    while #Logs > 8 do
         table.remove(Logs, 1)
     end
 
@@ -819,266 +419,618 @@ local function AddLog(Message)
         end
     end
 
-    for _, Entry in ipairs(Logs) do
-        Create("TextLabel", {
-            Size = UDim2.new(1, -10, 0, 22),
-            BackgroundTransparency = 1,
-            Text = "[" .. Entry.Time .. "] " .. Entry.Message,
-            TextColor3 = Color3.fromRGB(200, 200, 210),
-            Font = Enum.Font.Code,
-            TextSize = 11,
-            TextXAlignment = Enum.TextXAlignment.Left
-        }, LogScroll)
-    end
+    for Index, LogText in ipairs(Logs) do
 
-    task.defer(function()
-        pcall(function()
-            LogScroll.CanvasPosition = Vector2.new(
-                0,
-                math.max(0, LogLayout.AbsoluteContentSize.Y)
-            )
-        end)
-    end)
+        Create("TextLabel", {
+            Size = UDim2.new(1, 0, 0, 25),
+            BackgroundTransparency = 1,
+            Text = "[" .. tostring(Index) .. "] " .. LogText,
+            TextColor3 = GetLogColor(LogText),
+            TextSize = 12,
+            Font = Enum.Font.GothamMedium,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            LayoutOrder = Index,
+            ZIndex = 35
+        }, LogScroll)
+
+    end
 end
 
---==================================================
--- SAVE SETTINGS
---==================================================
-
-local SaveButton = Create("TextButton", {
-    Size = UDim2.fromOffset(150, 34),
-    Position = UDim2.fromOffset(10, 145),
-    BackgroundColor3 = Color3.fromRGB(50, 105, 165),
+local ClearLogsButton = Create("TextButton", {
+    Size = UDim2.new(0, 110, 0, 35),
+    Position = UDim2.new(1, -120, 1, -45),
+    BackgroundColor3 = BUTTON,
     BorderSizePixel = 0,
-    Text = "SAVE SETTINGS",
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    Font = Enum.Font.GothamBold,
-    TextSize = 12
-}, SettingsPage)
+    Text = "Clear Logs",
+    TextColor3 = WHITE,
+    TextSize = 12,
+    Font = Enum.Font.GothamMedium,
+    AutoButtonColor = false,
+    ZIndex = 40
+}, LogsPage)
 
 Create("UICorner", {
-    CornerRadius = UDim.new(0, 6)
-}, SaveButton)
+    CornerRadius = UDim.new(0, 7)
+}, ClearLogsButton)
 
-local SaveStatus = Create("TextLabel", {
-    Size = UDim2.new(1, -175, 0, 34),
-    Position = UDim2.fromOffset(170, 145),
+ClearLogsButton.MouseButton1Click:Connect(function()
+
+    Logs = {}
+
+    for _, Child in ipairs(LogScroll:GetChildren()) do
+        if Child:IsA("TextLabel") then
+            Child:Destroy()
+        end
+    end
+
+end)
+
+--==================================================
+-- FARM PAGE
+--==================================================
+
+local StartButton = Create("TextButton", {
+    Name = "StartButton",
+    Size = UDim2.new(1, -20, 0, 42),
+    Position = UDim2.new(0, 10, 0, 10),
+    BackgroundColor3 = GREEN,
+    BorderSizePixel = 0,
+    Text = "START FARM",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    AutoButtonColor = false,
+    ZIndex = 300
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, StartButton)
+
+--==================================================
+-- SEARCH
+--==================================================
+
+local SearchFrame = Create("Frame", {
+    Name = "SearchFrame",
+    Size = UDim2.new(1, -20, 0, 36),
+    Position = UDim2.new(0, 10, 0, 60),
+    BackgroundColor3 = Color3.fromRGB(40, 40, 48),
+    BorderSizePixel = 1,
+    BorderColor3 = Color3.fromRGB(70, 70, 80),
+    Active = true,
+    ZIndex = 500
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 8)
+}, SearchFrame)
+
+Create("TextLabel", {
+    Size = UDim2.new(0, 32, 1, 0),
+    Position = UDim2.new(0, 4, 0, 0),
     BackgroundTransparency = 1,
-    Text = "Settings are not saved automatically.",
-    TextColor3 = Color3.fromRGB(145, 145, 155),
-    Font = Enum.Font.Gotham,
-    TextSize = 11,
-    TextXAlignment = Enum.TextXAlignment.Left
-}, SettingsPage)
+    Text = "🔍",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Center,
+    TextYAlignment = Enum.TextYAlignment.Center,
+    ZIndex = 501
+}, SearchFrame)
 
-local function SaveSettings()
-    if not CanUseFileAPI() then
-        SaveStatus.Text = "File API not supported"
-        SaveStatus.TextColor3 = Color3.fromRGB(220, 100, 100)
-        AddLog("Save failed: file API unavailable")
+local SearchBox = Create("TextBox", {
+    Name = "SearchBox",
+    Size = UDim2.new(1, -42, 1, 0),
+    Position = UDim2.new(0, 38, 0, 0),
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    Text = "",
+    PlaceholderText = "Search pack...",
+    PlaceholderColor3 = Color3.fromRGB(155, 155, 165),
+    TextColor3 = WHITE,
+    TextSize = 13,
+    Font = Enum.Font.GothamMedium,
+    ClearTextOnFocus = false,
+    TextEditable = true,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Center,
+    ZIndex = 502
+}, SearchFrame)
+
+--==================================================
+-- SCAN
+--==================================================
+
+local ScanButton = Create("TextButton", {
+    Name = "ScanButton",
+    Size = UDim2.new(0, 115, 0, 32),
+    Position = UDim2.new(0, 10, 0, 105),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "SCAN PACKS",
+    TextColor3 = WHITE,
+    TextSize = 12,
+    Font = Enum.Font.GothamBold,
+    AutoButtonColor = false,
+    ZIndex = 400
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, ScanButton)
+
+local PackCountLabel = Create("TextLabel", {
+    Name = "PackCountLabel",
+    Size = UDim2.new(1, -135, 0, 32),
+    Position = UDim2.new(0, 130, 0, 105),
+    BackgroundTransparency = 1,
+    Text = "0 packs found",
+    TextColor3 = GRAY,
+    TextSize = 12,
+    Font = Enum.Font.GothamMedium,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 400
+}, FarmPage)
+
+--==================================================
+-- PACK SCROLL
+--==================================================
+
+local PackScroll = Create("ScrollingFrame", {
+    Name = "PackScroll",
+    Size = UDim2.new(1, -20, 1, -150),
+    Position = UDim2.new(0, 10, 0, 145),
+    BackgroundColor3 = PANEL2,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 5,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    ZIndex = 100
+}, FarmPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 8)
+}, PackScroll)
+
+Create("UIPadding", {
+    PaddingTop = UDim.new(0, 8),
+    PaddingBottom = UDim.new(0, 8),
+    PaddingLeft = UDim.new(0, 8),
+    PaddingRight = UDim.new(0, 8)
+}, PackScroll)
+
+Create("UIGridLayout", {
+    CellSize = UDim2.new(0.31, 0, 0, 40),
+    CellPadding = UDim2.new(0.025, 0, 0, 7),
+    SortOrder = Enum.SortOrder.Name,
+    HorizontalAlignment = Enum.HorizontalAlignment.Left,
+    VerticalAlignment = Enum.VerticalAlignment.Top
+}, PackScroll)
+
+--==================================================
+-- SEARCH FILTER
+--==================================================
+
+local function UpdateSearch()
+
+    local SearchText = string.lower(
+        tostring(SearchBox.Text or "")
+    )
+
+    for PackName, Button in pairs(PackButtons) do
+
+        local LowerName = string.lower(PackName)
+
+        if SearchText == "" then
+            Button.Visible = true
+
+        elseif string.find(
+            LowerName,
+            SearchText,
+            1,
+            true
+        ) then
+            Button.Visible = true
+
+        else
+            Button.Visible = false
+        end
+
+    end
+end
+
+SearchBox:GetPropertyChangedSignal("Text"):Connect(UpdateSearch)
+
+--==================================================
+-- PACK BUTTON
+--==================================================
+
+local function CreatePackToggle(PackName)
+
+    if PackButtons[PackName] then
         return
     end
 
-    local SelectedPacks = {}
-
-    for PackName, Enabled in pairs(ToggleStates) do
-        if PackName ~= "Event 2 Pack"
-            and PackName ~= "Anti-AFK" then
-
-            SelectedPacks[PackName] = Enabled == true
-        end
+    if ToggleStates[PackName] == nil then
+        ToggleStates[PackName] = false
     end
 
-    local MainPosition = {
-        XScale = Main.Position.X.Scale,
-        XOffset = Main.Position.X.Offset,
-        YScale = Main.Position.Y.Scale,
-        YOffset = Main.Position.Y.Offset
-    }
+    local Button = Create("TextButton", {
+        Name = PackName,
+        Size = UDim2.new(0, 0, 0, 40),
+        BackgroundColor3 = BUTTON,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 150
+    }, PackScroll)
 
-    local ShowPosition = {
-        XScale = ShowButton.Position.X.Scale,
-        XOffset = ShowButton.Position.X.Offset,
-        YScale = ShowButton.Position.Y.Scale,
-        YOffset = ShowButton.Position.Y.Offset
-    }
+    Create("UICorner", {
+        CornerRadius = UDim.new(0, 7)
+    }, Button)
 
-    local Data = {
-        Delay = Delay,
-        Event2Pack = ToggleStates["Event 2 Pack"] == true,
-        AntiAFK = ToggleStates["Anti-AFK"] == true,
-        SelectedPacks = SelectedPacks,
-        MainPosition = MainPosition,
-        ShowButtonPosition = ShowPosition
-    }
+    Create("TextLabel", {
+        Size = UDim2.new(1, -55, 1, 0),
+        Position = UDim2.new(0, 8, 0, 0),
+        BackgroundTransparency = 1,
+        Text = PackName,
+        TextColor3 = WHITE,
+        TextSize = 11,
+        Font = Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        ZIndex = 151
+    }, Button)
 
-    local Success, ErrorMessage = pcall(function()
-        writefile(
-            SettingsFile,
-            HttpService:JSONEncode(Data)
-        )
+    local Status = Create("TextLabel", {
+        Size = UDim2.new(0, 42, 1, 0),
+        Position = UDim2.new(1, -47, 0, 0),
+        BackgroundTransparency = 1,
+        TextSize = 10,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ZIndex = 151
+    }, Button)
+
+    local function UpdateStatus()
+
+        if ToggleStates[PackName] then
+            Status.Text = "ON"
+            Status.TextColor3 = GREEN
+        else
+            Status.Text = "OFF"
+            Status.TextColor3 = RED
+        end
+
+    end
+
+    UpdateStatus()
+
+    Button.MouseEnter:Connect(function()
+        Button.BackgroundColor3 = HOVER
     end)
 
-    if Success then
-        SaveStatus.Text = "Saved!"
-        SaveStatus.TextColor3 = Color3.fromRGB(90, 200, 120)
-        AddLog("Settings saved")
+    Button.MouseLeave:Connect(function()
+        Button.BackgroundColor3 = BUTTON
+    end)
+
+    Button.MouseButton1Click:Connect(function()
+
+        ToggleStates[PackName] =
+            not ToggleStates[PackName]
+
+        UpdateStatus()
+
+        AddLog(
+            PackName .. ": " ..
+            (
+                ToggleStates[PackName]
+                and "ON"
+                or "OFF"
+            )
+        )
+
+    end)
+
+    PackButtons[PackName] = Button
+
+    UpdateSearch()
+end
+
+--==================================================
+-- SCAN PACKS
+--==================================================
+
+local function ScanPacks()
+
+    local PotentialCards =
+        ReplicatedStorage:FindFirstChild("PotentialCards")
+
+    if not PotentialCards then
+
+        PackCountLabel.Text =
+            "PotentialCards not found"
+
+        AddLog(
+            "ERROR: PotentialCards not found"
+        )
+
+        return
+    end
+
+    local Count = 0
+
+    for _, Object in ipairs(
+        PotentialCards:GetChildren()
+    ) do
+
+        local PackName = Object.Name
+
+        if PackName ~= "ScalingUnits"
+            and PackName ~= "Crafted"
+            and PackName ~= "Light"
+            and PackName ~= "Dark"
+            and PackName ~= "Festival"
+            and PackName ~= "Manga" then
+
+            AllowedPacks[PackName] = true
+
+            if ToggleStates[PackName] == nil then
+                ToggleStates[PackName] = false
+            end
+
+            CreatePackToggle(PackName)
+
+            Count = Count + 1
+        end
+    end
+
+    PackCountLabel.Text =
+        tostring(Count) .. " packs found"
+
+    UpdateSearch()
+
+    AddLog(
+        "Scanned " ..
+        tostring(Count) ..
+        " packs"
+    )
+end
+
+ScanButton.MouseButton1Click:Connect(function()
+    ScanPacks()
+end)
+
+--==================================================
+-- EVENTS
+--==================================================
+
+Create("TextLabel", {
+    Size = UDim2.new(1, -20, 0, 35),
+    Position = UDim2.new(0, 10, 0, 15),
+    BackgroundTransparency = 1,
+    Text = "Events",
+    TextColor3 = WHITE,
+    TextSize = 17,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 30
+}, EventsPage)
+
+local EventFrame = Create("TextButton", {
+    Size = UDim2.new(1, -20, 0, 70),
+    Position = UDim2.new(0, 10, 0, 60),
+    BackgroundColor3 = PANEL2,
+    BorderSizePixel = 0,
+    Text = "",
+    AutoButtonColor = false,
+    ZIndex = 30
+}, EventsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 8)
+}, EventFrame)
+
+Create("TextLabel", {
+    Size = UDim2.new(1, -100, 0, 30),
+    Position = UDim2.new(0, 12, 0, 8),
+    BackgroundTransparency = 1,
+    Text = "Event 2 Pack",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 31
+}, EventFrame)
+
+Create("TextLabel", {
+    Size = UDim2.new(1, -100, 0, 20),
+    Position = UDim2.new(0, 12, 0, 38),
+    BackgroundTransparency = 1,
+    Text = "Request 2 offers at once",
+    TextColor3 = GRAY,
+    TextSize = 11,
+    Font = Enum.Font.GothamMedium,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 31
+}, EventFrame)
+
+local EventStatus = Create("TextLabel", {
+    Size = UDim2.new(0, 60, 0, 25),
+    Position = UDim2.new(1, -70, 0, 23),
+    BackgroundTransparency = 1,
+    TextSize = 12,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 31
+}, EventFrame)
+
+local function UpdateEventStatus()
+
+    if ToggleStates["Event 2 Pack"] then
+        EventStatus.Text = "ON"
+        EventStatus.TextColor3 = GREEN
     else
-        SaveStatus.Text = "Save failed"
-        SaveStatus.TextColor3 = Color3.fromRGB(220, 100, 100)
-        AddLog("Save failed: " .. tostring(ErrorMessage))
+        EventStatus.Text = "OFF"
+        EventStatus.TextColor3 = RED
     end
+
 end
 
-SaveButton.MouseButton1Click:Connect(SaveSettings)
+UpdateEventStatus()
+
+EventFrame.MouseButton1Click:Connect(function()
+
+    ToggleStates["Event 2 Pack"] =
+        not ToggleStates["Event 2 Pack"]
+
+    UpdateEventStatus()
+end)
 
 --==================================================
--- LOAD GUI POSITIONS
+-- SETTINGS
 --==================================================
 
-local function ApplySavedPositions()
-    if type(LoadedSettings.MainPosition) == "table" then
-        local P = LoadedSettings.MainPosition
+Create("TextLabel", {
+    Size = UDim2.new(1, -20, 0, 30),
+    Position = UDim2.new(0, 10, 0, 15),
+    BackgroundTransparency = 1,
+    Text = "Farm Delay",
+    TextColor3 = WHITE,
+    TextSize = 15,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left,
+    ZIndex = 30
+}, SettingsPage)
 
-        if type(P.XScale) == "number"
-            and type(P.XOffset) == "number"
-            and type(P.YScale) == "number"
-            and type(P.YOffset) == "number" then
+local DelayValue = Create("TextLabel", {
+    Size = UDim2.new(0, 90, 0, 35),
+    Position = UDim2.new(0, 10, 0, 55),
+    BackgroundColor3 = PANEL2,
+    BorderSizePixel = 0,
+    Text = string.format("%.1f", Delay) .. "s",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 30
+}, SettingsPage)
 
-            Main.Position = UDim2.new(
-                P.XScale,
-                P.XOffset,
-                P.YScale,
-                P.YOffset
-            )
-        end
-    end
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, DelayValue)
 
-    if type(LoadedSettings.ShowButtonPosition) == "table" then
-        local P = LoadedSettings.ShowButtonPosition
+local MinusButton = Create("TextButton", {
+    Size = UDim2.new(0, 40, 0, 35),
+    Position = UDim2.new(0, 110, 0, 55),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "-",
+    TextColor3 = WHITE,
+    TextSize = 18,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 30
+}, SettingsPage)
 
-        if type(P.XScale) == "number"
-            and type(P.XOffset) == "number"
-            and type(P.YScale) == "number"
-            and type(P.YOffset) == "number" then
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, MinusButton)
 
-            ShowButton.Position = UDim2.new(
-                P.XScale,
-                P.XOffset,
-                P.YScale,
-                P.YOffset
-            )
-        end
-    end
+local PlusButton = Create("TextButton", {
+    Size = UDim2.new(0, 40, 0, 35),
+    Position = UDim2.new(0, 155, 0, 55),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "+",
+    TextColor3 = WHITE,
+    TextSize = 18,
+    Font = Enum.Font.GothamBold,
+    ZIndex = 30
+}, SettingsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, PlusButton)
+
+local function UpdateDelay()
+
+    Delay = math.clamp(
+        math.floor(Delay * 10 + 0.5) / 10,
+        0.1,
+        10
+    )
+
+    DelayValue.Text =
+        string.format("%.1f", Delay) .. "s"
 end
 
-ApplySavedPositions()
-
---==================================================
--- DRAG MAIN
---==================================================
-
-local DraggingMain = false
-local DragStartMain
-local StartPositionMain
-
-DragBar.InputBegan:Connect(function(Input)
-    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-        DraggingMain = true
-        DragStartMain = Input.Position
-        StartPositionMain = Main.Position
-
-        Input.Changed:Connect(function()
-            if Input.UserInputState == Enum.UserInputState.End then
-                DraggingMain = false
-            end
-        end)
-    end
+MinusButton.MouseButton1Click:Connect(function()
+    Delay = Delay - 0.1
+    UpdateDelay()
 end)
 
-UserInputService.InputChanged:Connect(function(Input)
-    if DraggingMain and Input.UserInputType == Enum.UserInputType.MouseMovement then
-        local Delta = Input.Position - DragStartMain
-
-        Main.Position = UDim2.new(
-            StartPositionMain.X.Scale,
-            StartPositionMain.X.Offset + Delta.X,
-            StartPositionMain.Y.Scale,
-            StartPositionMain.Y.Offset + Delta.Y
-        )
-    end
-end)
-
---==================================================
--- HIDE / SHOW
---==================================================
-
-HideButton.MouseButton1Click:Connect(function()
-    Main.Visible = false
-    ShowButton.Visible = true
-end)
-
-ShowButton.MouseButton1Click:Connect(function()
-    Main.Visible = true
-    ShowButton.Visible = false
-end)
-
---==================================================
--- DRAG SHOW BUTTON
---==================================================
-
-local DraggingShow = false
-local DragStartShow
-local StartPositionShow
-
-ShowButton.InputBegan:Connect(function(Input)
-    if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-        DraggingShow = true
-        DragStartShow = Input.Position
-        StartPositionShow = ShowButton.Position
-
-        Input.Changed:Connect(function()
-            if Input.UserInputState == Enum.UserInputState.End then
-                DraggingShow = false
-            end
-        end)
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(Input)
-    if DraggingShow and Input.UserInputType == Enum.UserInputType.MouseMovement then
-        local Delta = Input.Position - DragStartShow
-
-        ShowButton.Position = UDim2.new(
-            StartPositionShow.X.Scale,
-            StartPositionShow.X.Offset + Delta.X,
-            StartPositionShow.Y.Scale,
-            StartPositionShow.Y.Offset + Delta.Y
-        )
-    end
+PlusButton.MouseButton1Click:Connect(function()
+    Delay = Delay + 0.1
+    UpdateDelay()
 end)
 
 --==================================================
 -- ANTI AFK
 --==================================================
 
-Player.Idled:Connect(function()
-    if not ToggleStates["Anti-AFK"] then
-        return
+local AntiAFKButton = Create("TextButton", {
+    Size = UDim2.new(1, -20, 0, 40),
+    Position = UDim2.new(0, 10, 0, 105),
+    BackgroundColor3 = BUTTON,
+    BorderSizePixel = 0,
+    Text = "Anti-AFK: ON",
+    TextColor3 = GREEN,
+    TextSize = 13,
+    Font = Enum.Font.GothamMedium,
+    ZIndex = 30
+}, SettingsPage)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 7)
+}, AntiAFKButton)
+
+AntiAFKButton.MouseButton1Click:Connect(function()
+
+    ToggleStates["Anti-AFK"] =
+        not ToggleStates["Anti-AFK"]
+
+    if ToggleStates["Anti-AFK"] then
+        AntiAFKButton.Text = "Anti-AFK: ON"
+        AntiAFKButton.TextColor3 = GREEN
+    else
+        AntiAFKButton.Text = "Anti-AFK: OFF"
+        AntiAFKButton.TextColor3 = RED
     end
 
-    pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new(0, 0))
-    end)
+end)
+
+Player.Idled:Connect(function()
+
+    if ToggleStates["Anti-AFK"] then
+
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(
+                Vector2.new(0, 0)
+            )
+        end)
+
+    end
+
 end)
 
 --==================================================
--- FARM CHECK
+-- CHECK SELECTED PACK
 --==================================================
 
 local function HasSelectedPack()
+
     for PackName, Enabled in pairs(ToggleStates) do
+
         if Enabled
             and PackName ~= "Event 2 Pack"
             and PackName ~= "Anti-AFK"
@@ -1092,142 +1044,346 @@ local function HasSelectedPack()
 end
 
 --==================================================
+-- REMOTE FIND
+--==================================================
+
+local Remotes =
+    ReplicatedStorage:FindFirstChild("Remotes")
+
+local RequestConveyorOffer = nil
+local BuyPack = nil
+local SetRecoverPack = nil
+
+if Remotes then
+
+    RequestConveyorOffer =
+        Remotes:FindFirstChild(
+            "RequestConveyorOffer"
+        )
+
+    BuyPack =
+        Remotes:FindFirstChild(
+            "BuyPack"
+        )
+
+    SetRecoverPack =
+        Remotes:FindFirstChild(
+            "SetRecoverPack"
+        )
+
+end
+
+if not Remotes then
+
+    AddLog("ERROR: Remotes not found")
+
+elseif not RequestConveyorOffer then
+
+    AddLog(
+        "ERROR: RequestConveyorOffer not found"
+    )
+
+elseif not BuyPack then
+
+    AddLog(
+        "ERROR: BuyPack not found"
+    )
+
+elseif not SetRecoverPack then
+
+    AddLog(
+        "ERROR: SetRecoverPack not found"
+    )
+
+else
+
+    AddLog("Remotes found")
+
+end
+
+--==================================================
 -- BUY / ROLL
 --==================================================
 
 local function BuyAndRoll()
+
+    if not RequestConveyorOffer then
+        AddLog("ERROR: RequestConveyorOffer missing")
+        return
+    end
+
+    if not BuyPack then
+        AddLog("ERROR: BuyPack missing")
+        return
+    end
+
     local OfferCount = 1
 
     if ToggleStates["Event 2 Pack"] then
         OfferCount = 2
     end
 
-    local Success, Offers = pcall(function()
-        return RequestConveyorOffer:InvokeServer(OfferCount)
+    local Success, Result = pcall(function()
+
+        return RequestConveyorOffer:InvokeServer(
+            OfferCount
+        )
+
     end)
 
     if not Success then
-        AddLog("RequestConveyorOffer error")
+
+        AddLog(
+            "ERROR: RequestConveyorOffer"
+        )
+
         return
     end
 
-    if type(Offers) ~= "table" then
+    if type(Result) ~= "table" then
         AddLog("No offers returned")
         return
     end
 
-    for _, Offer in ipairs(Offers) do
-        if not Running then
-            break
-        end
+    for _, Offer in pairs(Result) do
 
         if type(Offer) == "table" then
-            local OfferId = Offer.OfferId
-                or Offer.Id
-                or Offer.ID
 
-            local PackName = Offer.PackName
-                or Offer.Name
-                or Offer.Pack
+            local OfferId =
+                Offer.OfferId
 
-            local Mutation = Offer.Mutation
-                or "Normal"
+            local PackName =
+                Offer.PackName
+
+            local Mutation =
+                Offer.Mutation
 
             if PackName
                 and AllowedPacks[PackName]
                 and ToggleStates[PackName] then
 
                 AddLog(
-                    "Buying: "
-                    .. tostring(PackName)
-                    .. " | "
-                    .. tostring(Mutation)
+                    "Buying: " ..
+                    tostring(PackName)
                 )
 
-                local BuySuccess, BuyError = pcall(function()
+                local BuySuccess = pcall(function()
+
                     BuyPack:FireServer(
-                        OfferId,
                         PackName,
-                        Mutation
+                        Mutation,
+                        OfferId
                     )
+
                 end)
 
-                if not BuySuccess then
-                    AddLog(
-                        "BuyPack error: "
-                        .. tostring(BuyError)
-                    )
-                else
+                if BuySuccess then
+
                     task.wait(0.5)
 
-                    pcall(function()
-                        SetRecoverPack:FireServer(
-                            PackName
-                        )
-                    end)
+                    if SetRecoverPack then
+
+                        pcall(function()
+
+                            SetRecoverPack:FireServer(
+                                OfferId
+                            )
+
+                        end)
+
+                    end
 
                     AddLog(
-                        "ROLLED: "
-                        .. tostring(PackName)
+                        "ROLLED: " ..
+                        tostring(PackName)
                     )
+
+                else
+
+                    AddLog(
+                        "ERROR: BuyPack"
+                    )
+
                 end
+
             end
+
         end
+
     end
 end
 
 --==================================================
--- FARM LOOP
+-- START / STOP
 --==================================================
-
-local function FarmLoop()
-    while Running do
-        if HasSelectedPack() then
-            BuyAndRoll()
-        else
-            AddLog("No pack selected")
-            task.wait(1)
-        end
-
-        task.wait(Delay)
-    end
-end
 
 StartButton.MouseButton1Click:Connect(function()
+
     if Running then
+
         Running = false
 
-        StartButton.Text = "START FARM"
-        StartButton.BackgroundColor3 = Color3.fromRGB(45, 145, 75)
+        StartButton.Text =
+            "START FARM"
 
-        AddLog("Farm stopped")
-    else
-        if not HasSelectedPack() then
-            AddLog("Select at least 1 pack first")
-            return
+        StartButton.BackgroundColor3 =
+            GREEN
+
+        AddLog(
+            "Farm Stopped"
+        )
+
+        return
+    end
+
+    if not HasSelectedPack() then
+
+        AddLog(
+            "ERROR: No pack selected"
+        )
+
+        return
+    end
+
+    Running = true
+
+    StartButton.Text =
+        "STOP FARM"
+
+    StartButton.BackgroundColor3 =
+        RED
+
+    AddLog(
+        "Farm Started"
+    )
+
+    task.spawn(function()
+
+        while Running do
+
+            BuyAndRoll()
+
+            task.wait(Delay)
+
         end
 
-        Running = true
+    end)
 
-        StartButton.Text = "STOP FARM"
-        StartButton.BackgroundColor3 = Color3.fromRGB(170, 55, 55)
-
-        AddLog("Farm started")
-
-        task.spawn(FarmLoop)
-    end
 end)
 
 --==================================================
--- INITIAL SCAN
+-- SHOW BUTTON
+--==================================================
+
+local ShowButton = Create("TextButton", {
+    Name = "ShowButton",
+    Size = UDim2.new(0, 48, 0, 48),
+    Position = UDim2.new(
+        0,
+        10,
+        0.5,
+        -24
+    ),
+    BackgroundColor3 = PANEL,
+    BorderSizePixel = 0,
+    Text = "☰",
+    TextColor3 = WHITE,
+    TextSize = 20,
+    Font = Enum.Font.GothamBold,
+    Visible = false,
+    Active = true,
+    AutoButtonColor = false,
+    ZIndex = 999
+}, ScreenGui)
+
+Create("UICorner", {
+    CornerRadius = UDim.new(0, 10)
+}, ShowButton)
+
+--==================================================
+-- SHOW BUTTON DRAG
+--==================================================
+
+local IconDragging = false
+local IconDragStart
+local IconStartPosition
+
+ShowButton.MouseButton1Down:Connect(function()
+
+    IconDragging = true
+
+    IconDragStart =
+        UserInputService:GetMouseLocation()
+
+    IconStartPosition =
+        ShowButton.Position
+
+end)
+
+UserInputService.InputChanged:Connect(function(Input)
+
+    if not IconDragging then
+        return
+    end
+
+    if Input.UserInputType ~= Enum.UserInputType.MouseMovement then
+        return
+    end
+
+    local MousePosition =
+        UserInputService:GetMouseLocation()
+
+    local Delta =
+        MousePosition - IconDragStart
+
+    ShowButton.Position = UDim2.new(
+        IconStartPosition.X.Scale,
+        IconStartPosition.X.Offset + Delta.X,
+        IconStartPosition.Y.Scale,
+        IconStartPosition.Y.Offset + Delta.Y
+    )
+
+end)
+
+UserInputService.InputEnded:Connect(function(Input)
+
+    if Input.UserInputType ==
+        Enum.UserInputType.MouseButton1 then
+
+        IconDragging = false
+
+    end
+
+end)
+
+--==================================================
+-- HIDE / SHOW
+--==================================================
+
+HideButton.MouseButton1Click:Connect(function()
+
+    Main.Visible = false
+    ShowButton.Visible = true
+
+end)
+
+ShowButton.MouseButton1Click:Connect(function()
+
+    Main.Visible = true
+    ShowButton.Visible = false
+
+end)
+
+--==================================================
+-- AUTO SCAN
 --==================================================
 
 task.defer(function()
+
     task.wait(0.2)
 
     ScanPacks()
-    UpdateSearch()
 
-    AddLog("Packs scanned")
     AddLog("Ready")
+
 end)
