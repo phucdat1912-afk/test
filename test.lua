@@ -1,115 +1,95 @@
---// Infiniti Tower 3x Debug - Auto Copy
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Player = Players.LocalPlayer
-local Results = {}
+local Logs = {}
 
 local function Log(...)
-    local msg = table.concat({...}, " ")
-    print(msg)
-    table.insert(Results, msg)
+    local s = table.concat({...}, " ")
+    print(s)
+    table.insert(Logs, s)
 end
 
-Log("========== INFINITI TOWER 3X DEBUG ==========")
+local function Copy()
+    local text = table.concat(Logs, "\n")
 
---// Scan Remotes
-for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-    if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-        local name = obj.Name:lower()
-
-        if name:find("speed")
-        or name:find("gamepass")
-        or name:find("pass")
-        or name:find("tower")
-        or name:find("infinite")
-        or name:find("infinity")
-        or name:find("mult")
-        or name:find("boost")
-        or name:find("3x")
-        or name:find("2x") then
-
-            Log(
-                "[REMOTE]",
-                obj:GetFullName(),
-                "|",
-                obj.ClassName
-            )
-        end
+    if setclipboard then
+        setclipboard(text)
+        print("========== LOG COPIED ==========")
+    elseif toclipboard then
+        toclipboard(text)
+        print("========== LOG COPIED ==========")
     end
 end
 
---// Scan PlayerGui
-for _, obj in ipairs(Player.PlayerGui:GetDescendants()) do
-    if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+Log("========== 3X BUTTON MONITOR ==========")
 
-        local text = ""
+local GameSpeed =
+    Player.PlayerGui
+    :WaitForChild("Frames")
+    :WaitForChild("InfiniteBattle")
+    :WaitForChild("GameSpeed")
 
-        if obj:IsA("TextButton") then
-            text = obj.Text or ""
-        end
+local Buttons = {
+    GameSpeed:FindFirstChild("Speed1x"),
+    GameSpeed:FindFirstChild("Speed2x"),
+    GameSpeed:FindFirstChild("Speed3x")
+}
 
-        local combined = (
-            tostring(obj.Name) ..
-            " " ..
-            tostring(text)
-        ):lower()
+for _, Button in ipairs(Buttons) do
+    if Button then
 
-        if combined:find("3x")
-        or combined:find("2x")
-        or combined:find("speed")
-        or combined:find("gamepass")
-        or combined:find("pass")
-        or combined:find("infinite")
-        or combined:find("tower") then
+        Log(
+            "[FOUND]",
+            Button:GetFullName(),
+            "Text=" .. tostring(Button.Text)
+        )
+
+        Button.MouseButton1Click:Connect(function()
 
             Log(
-                "[BUTTON]",
-                obj:GetFullName(),
-                "| Text=" .. tostring(text)
+                "[CLICK]",
+                Button:GetFullName(),
+                "Text=" .. tostring(Button.Text)
             )
-        end
+
+            -- Scan values/state immediately after click
+            task.wait(0.1)
+
+            for _, obj in ipairs(GameSpeed:GetDescendants()) do
+
+                if obj:IsA("TextLabel")
+                or obj:IsA("TextButton")
+                or obj:IsA("IntValue")
+                or obj:IsA("NumberValue")
+                or obj:IsA("BoolValue")
+                or obj:IsA("StringValue") then
+
+                    local value = ""
+
+                    pcall(function()
+                        if obj:IsA("TextLabel")
+                        or obj:IsA("TextButton") then
+                            value = obj.Text
+                        else
+                            value = tostring(obj.Value)
+                        end
+                    end)
+
+                    Log(
+                        "[STATE]",
+                        obj:GetFullName(),
+                        "=",
+                        tostring(value)
+                    )
+                end
+
+            end
+
+            Copy()
+        end)
     end
 end
 
---// Scan ReplicatedStorage values
-for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-    if obj:IsA("StringValue")
-    or obj:IsA("NumberValue")
-    or obj:IsA("IntValue")
-    or obj:IsA("BoolValue") then
-
-        local name = obj.Name:lower()
-
-        if name:find("speed")
-        or name:find("mult")
-        or name:find("tower")
-        or name:find("3x")
-        or name:find("2x")
-        or name:find("gamepass")
-        or name:find("pass") then
-
-            Log(
-                "[VALUE]",
-                obj:GetFullName(),
-                "| Value=" .. tostring(obj.Value)
-            )
-        end
-    end
-end
-
-Log("========== END ==========")
-
---// Auto copy
-local Output = table.concat(Results, "\n")
-
-if setclipboard then
-    setclipboard(Output)
-    print("✅ LOG ĐÃ ĐƯỢC COPY VÀO CLIPBOARD")
-elseif toclipboard then
-    toclipboard(Output)
-    print("✅ LOG ĐÃ ĐƯỢC COPY VÀO CLIPBOARD")
-else
-    warn("❌ Executor không hỗ trợ setclipboard/toclipboard")
-end
+Log("========== READY ==========")
+Log("Bấm 2x rồi 3x để monitor...")
