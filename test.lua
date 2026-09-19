@@ -1,6 +1,7 @@
 --==================================================
+-- PROJECT SLAYERS 2
 -- NPC + PLAYER TELEPORT
--- MANUAL LOAD VERSION
+-- MANUAL LOAD + MUZAN FILTER
 --==================================================
 
 local Players = game:GetService("Players")
@@ -19,8 +20,8 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.Parent = Player:WaitForChild("PlayerGui")
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(380, 520)
-Main.Position = UDim2.new(0.5, -190, 0.5, -260)
+Main.Size = UDim2.fromOffset(380, 540)
+Main.Position = UDim2.new(0.5, -190, 0.5, -270)
 Main.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 Main.BorderSizePixel = 0
 Main.Parent = Gui
@@ -48,9 +49,9 @@ local Title = Instance.new("TextLabel")
 Title.Position = UDim2.fromOffset(18, 8)
 Title.Size = UDim2.new(1, -36, 0, 28)
 Title.BackgroundTransparency = 1
-Title.Text = "TELEPORT"
-Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.TextSize = 21
+Title.Text = "PROJECT SLAYERS 2"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 19
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
@@ -60,24 +61,24 @@ Count.Position = UDim2.fromOffset(19, 36)
 Count.Size = UDim2.new(1, -140, 0, 18)
 Count.BackgroundTransparency = 1
 Count.Text = "Not loaded"
-Count.TextColor3 = Color3.fromRGB(145,145,160)
+Count.TextColor3 = Color3.fromRGB(145, 145, 160)
 Count.TextSize = 12
 Count.Font = Enum.Font.Gotham
 Count.TextXAlignment = Enum.TextXAlignment.Left
 Count.Parent = Header
 
 --==================================================
--- LOAD BUTTON
+-- LOAD
 --==================================================
 
 local LoadButton = Instance.new("TextButton")
 LoadButton.AnchorPoint = Vector2.new(1, 0.5)
 LoadButton.Position = UDim2.new(1, -15, 0.5, 0)
 LoadButton.Size = UDim2.fromOffset(85, 34)
-LoadButton.BackgroundColor3 = Color3.fromRGB(55,105,220)
+LoadButton.BackgroundColor3 = Color3.fromRGB(55, 105, 220)
 LoadButton.BorderSizePixel = 0
 LoadButton.Text = "LOAD"
-LoadButton.TextColor3 = Color3.new(1,1,1)
+LoadButton.TextColor3 = Color3.new(1, 1, 1)
 LoadButton.TextSize = 12
 LoadButton.Font = Enum.Font.GothamBold
 LoadButton.Parent = Header
@@ -91,12 +92,12 @@ Instance.new("UICorner", LoadButton).CornerRadius = UDim.new(0, 8)
 local SearchBox = Instance.new("TextBox")
 SearchBox.Position = UDim2.fromOffset(15, 78)
 SearchBox.Size = UDim2.new(1, -30, 0, 42)
-SearchBox.BackgroundColor3 = Color3.fromRGB(30,30,40)
+SearchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 SearchBox.BorderSizePixel = 0
 SearchBox.PlaceholderText = "Search NPC / Player..."
-SearchBox.PlaceholderColor3 = Color3.fromRGB(120,120,135)
+SearchBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
 SearchBox.Text = ""
-SearchBox.TextColor3 = Color3.fromRGB(235,235,240)
+SearchBox.TextColor3 = Color3.fromRGB(235, 235, 240)
 SearchBox.TextSize = 14
 SearchBox.Font = Enum.Font.Gotham
 SearchBox.ClearTextOnFocus = false
@@ -105,16 +106,72 @@ SearchBox.Parent = Main
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 10)
 
 --==================================================
+-- FILTER BUTTONS
+--==================================================
+
+local AllButton = Instance.new("TextButton")
+AllButton.Position = UDim2.fromOffset(15, 128)
+AllButton.Size = UDim2.fromOffset(70, 32)
+AllButton.BackgroundColor3 = Color3.fromRGB(55, 105, 220)
+AllButton.BorderSizePixel = 0
+AllButton.Text = "ALL"
+AllButton.TextColor3 = Color3.new(1, 1, 1)
+AllButton.TextSize = 11
+AllButton.Font = Enum.Font.GothamBold
+AllButton.Parent = Main
+
+Instance.new("UICorner", AllButton).CornerRadius = UDim.new(0, 8)
+
+local MuzanButton = Instance.new("TextButton")
+MuzanButton.Position = UDim2.fromOffset(92, 128)
+MuzanButton.Size = UDim2.fromOffset(90, 32)
+MuzanButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
+MuzanButton.BorderSizePixel = 0
+MuzanButton.Text = "MUZAN"
+MuzanButton.TextColor3 = Color3.fromRGB(235, 235, 240)
+MuzanButton.TextSize = 11
+MuzanButton.Font = Enum.Font.GothamBold
+MuzanButton.Parent = Main
+
+Instance.new("UICorner", MuzanButton).CornerRadius = UDim.new(0, 8)
+
+local NPCButton = Instance.new("TextButton")
+NPCButton.Position = UDim2.fromOffset(189, 128)
+NPCButton.Size = UDim2.fromOffset(70, 32)
+NPCButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
+NPCButton.BorderSizePixel = 0
+NPCButton.Text = "NPC"
+NPCButton.TextColor3 = Color3.fromRGB(235, 235, 240)
+NPCButton.TextSize = 11
+NPCButton.Font = Enum.Font.GothamBold
+NPCButton.Parent = Main
+
+Instance.new("UICorner", NPCButton).CornerRadius = UDim.new(0, 8)
+
+local PlayerButton = Instance.new("TextButton")
+PlayerButton.Position = UDim2.fromOffset(266, 128)
+PlayerButton.Size = UDim2.fromOffset(85, 32)
+PlayerButton.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
+PlayerButton.BorderSizePixel = 0
+PlayerButton.Text = "PLAYER"
+PlayerButton.TextColor3 = Color3.fromRGB(235, 235, 240)
+PlayerButton.TextSize = 11
+PlayerButton.Font = Enum.Font.GothamBold
+PlayerButton.Parent = Main
+
+Instance.new("UICorner", PlayerButton).CornerRadius = UDim.new(0, 8)
+
+--==================================================
 -- LIST
 --==================================================
 
 local List = Instance.new("ScrollingFrame")
-List.Position = UDim2.fromOffset(15, 132)
-List.Size = UDim2.new(1, -30, 1, -147)
+List.Position = UDim2.fromOffset(15, 172)
+List.Size = UDim2.new(1, -30, 1, -187)
 List.BackgroundTransparency = 1
 List.BorderSizePixel = 0
 List.ScrollBarThickness = 4
-List.ScrollBarImageColor3 = Color3.fromRGB(90,90,110)
+List.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 110)
 List.CanvasSize = UDim2.new()
 List.AutomaticCanvasSize = Enum.AutomaticSize.Y
 List.Parent = Main
@@ -129,20 +186,17 @@ Padding.PaddingBottom = UDim.new(0, 5)
 Padding.Parent = List
 
 --==================================================
--- ROOT
---==================================================
-
-local function getRoot(model)
-    return model:FindFirstChild("HumanoidRootPart")
-        or model.PrimaryPart
-end
-
---==================================================
 -- DATA
 --==================================================
 
 local LoadedTargets = {}
 local Loaded = false
+local CurrentFilter = "ALL"
+
+local function getRoot(model)
+    return model:FindFirstChild("HumanoidRootPart")
+        or model.PrimaryPart
+end
 
 --==================================================
 -- TELEPORT
@@ -154,23 +208,22 @@ local function teleportTo(target)
         return
     end
 
-    local playerRoot = getRoot(character)
+    local root = getRoot(character)
     local targetRoot = getRoot(target)
 
-    if playerRoot and targetRoot then
-        playerRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
+    if root and targetRoot then
+        root.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
     end
 end
 
 --==================================================
--- BUTTON
+-- CREATE BUTTON
 --==================================================
 
 local function createButton(target, targetType)
     local Button = Instance.new("TextButton")
-
     Button.Size = UDim2.new(1, -8, 0, 50)
-    Button.BackgroundColor3 = Color3.fromRGB(28,28,38)
+    Button.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
     Button.BorderSizePixel = 0
     Button.Text = ""
     Button.AutoButtonColor = false
@@ -183,7 +236,7 @@ local function createButton(target, targetType)
     Name.Size = UDim2.new(1, -110, 0, 23)
     Name.BackgroundTransparency = 1
     Name.Text = target.Name
-    Name.TextColor3 = Color3.fromRGB(235,235,240)
+    Name.TextColor3 = Color3.fromRGB(235, 235, 240)
     Name.TextSize = 14
     Name.Font = Enum.Font.GothamMedium
     Name.TextXAlignment = Enum.TextXAlignment.Left
@@ -195,7 +248,7 @@ local function createButton(target, targetType)
     Type.Size = UDim2.new(1, -110, 0, 16)
     Type.BackgroundTransparency = 1
     Type.Text = targetType
-    Type.TextColor3 = Color3.fromRGB(130,130,145)
+    Type.TextColor3 = Color3.fromRGB(130, 130, 145)
     Type.TextSize = 10
     Type.Font = Enum.Font.Gotham
     Type.TextXAlignment = Enum.TextXAlignment.Left
@@ -205,9 +258,9 @@ local function createButton(target, targetType)
     TP.AnchorPoint = Vector2.new(1, 0.5)
     TP.Position = UDim2.new(1, -10, 0.5, 0)
     TP.Size = UDim2.fromOffset(75, 28)
-    TP.BackgroundColor3 = Color3.fromRGB(55,105,220)
+    TP.BackgroundColor3 = Color3.fromRGB(55, 105, 220)
     TP.Text = "TELEPORT"
-    TP.TextColor3 = Color3.new(1,1,1)
+    TP.TextColor3 = Color3.new(1, 1, 1)
     TP.TextSize = 10
     TP.Font = Enum.Font.GothamBold
     TP.Parent = Button
@@ -215,13 +268,13 @@ local function createButton(target, targetType)
     Instance.new("UICorner", TP).CornerRadius = UDim.new(0, 7)
 
     Button.MouseEnter:Connect(function()
-        Button.BackgroundColor3 = Color3.fromRGB(37,37,49)
-        TP.BackgroundColor3 = Color3.fromRGB(70,120,235)
+        Button.BackgroundColor3 = Color3.fromRGB(37, 37, 49)
+        TP.BackgroundColor3 = Color3.fromRGB(70, 120, 235)
     end)
 
     Button.MouseLeave:Connect(function()
-        Button.BackgroundColor3 = Color3.fromRGB(28,28,38)
-        TP.BackgroundColor3 = Color3.fromRGB(55,105,220)
+        Button.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+        TP.BackgroundColor3 = Color3.fromRGB(55, 105, 220)
     end)
 
     Button.MouseButton1Click:Connect(function()
@@ -230,7 +283,7 @@ local function createButton(target, targetType)
 end
 
 --==================================================
--- FILTER LOADED DATA
+-- RENDER
 --==================================================
 
 local function render()
@@ -248,24 +301,39 @@ local function render()
     local shown = 0
 
     for _, data in ipairs(LoadedTargets) do
-        if data.Target
-            and data.Target.Parent
-            and getRoot(data.Target)
-            and (
-                search == ""
-                or data.Target.Name:lower():find(search, 1, true)
-            ) then
+        local target = data.Target
 
-            createButton(data.Target, data.Type)
-            shown += 1
+        if target
+            and target.Parent
+            and getRoot(target) then
+
+            local matchesFilter =
+                CurrentFilter == "ALL"
+                or CurrentFilter == data.Type
+                or (CurrentFilter == "MUZAN"
+                    and data.Type == "NPC"
+                    and target.Name:lower():find("muzan", 1, true))
+
+            local matchesSearch =
+                search == ""
+                or target.Name:lower():find(search, 1, true)
+
+            if matchesFilter and matchesSearch then
+                createButton(target, data.Type)
+                shown += 1
+            end
         end
     end
 
-    Count.Text = string.format("%d loaded • %d shown", #LoadedTargets, shown)
+    Count.Text = string.format(
+        "%d loaded • %d shown",
+        #LoadedTargets,
+        shown
+    )
 end
 
 --==================================================
--- MANUAL LOAD
+-- LOAD
 --==================================================
 
 local function loadTargets()
@@ -284,14 +352,13 @@ local function loadTargets()
         end
     end
 
-    -- NPCs
+    -- NPC
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model")
             and obj ~= Player.Character
             and obj:FindFirstChildOfClass("Humanoid")
             and getRoot(obj) then
 
-            -- Không thêm Character của Player lần nữa
             local isPlayerCharacter = false
 
             for _, plr in ipairs(Players:GetPlayers()) do
@@ -315,12 +382,57 @@ local function loadTargets()
 end
 
 --==================================================
--- LOAD CLICK
+-- FILTER BUTTONS
+--==================================================
+
+local function setFilter(filter)
+    CurrentFilter = filter
+
+    AllButton.BackgroundColor3 =
+        filter == "ALL"
+        and Color3.fromRGB(55, 105, 220)
+        or Color3.fromRGB(45, 45, 58)
+
+    MuzanButton.BackgroundColor3 =
+        filter == "MUZAN"
+        and Color3.fromRGB(55, 105, 220)
+        or Color3.fromRGB(45, 45, 58)
+
+    NPCButton.BackgroundColor3 =
+        filter == "NPC"
+        and Color3.fromRGB(55, 105, 220)
+        or Color3.fromRGB(45, 45, 58)
+
+    PlayerButton.BackgroundColor3 =
+        filter == "PLAYER"
+        and Color3.fromRGB(55, 105, 220)
+        or Color3.fromRGB(45, 45, 58)
+
+    render()
+end
+
+AllButton.MouseButton1Click:Connect(function()
+    setFilter("ALL")
+end)
+
+MuzanButton.MouseButton1Click:Connect(function()
+    setFilter("MUZAN")
+end)
+
+NPCButton.MouseButton1Click:Connect(function()
+    setFilter("NPC")
+end)
+
+PlayerButton.MouseButton1Click:Connect(function()
+    setFilter("PLAYER")
+end)
+
+--==================================================
+-- LOAD BUTTON
 --==================================================
 
 LoadButton.MouseButton1Click:Connect(function()
     LoadButton.Text = "LOADING..."
-
     task.wait()
 
     loadTargets()
