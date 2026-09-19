@@ -1,51 +1,56 @@
 --==================================================
--- NPC + PLAYER HUB
--- LOAD MANUALLY
--- TELEPORT + ESP + NAME
+-- NPC + PLAYER HUB V2
+-- LOAD / SEARCH / TAB / TELEPORT / ESP + NAME
 --==================================================
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local UIS = game:GetService("UserInputService")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local LP = Players.LocalPlayer
+local PG = LP:WaitForChild("PlayerGui")
 
 --==================================================
--- CLEAN OLD
+-- CLEAN
 --==================================================
 
-local Old = PlayerGui:FindFirstChild("NPCPlayerHub")
-
-if Old then
-	Old:Destroy()
+for _, name in ipairs({
+	"SpiderLilyHub",
+	"NPCPlayerHub",
+	"NPCPlayerHub_V2"
+}) do
+	local old = PG:FindFirstChild(name)
+	if old then
+		old:Destroy()
+	end
 end
 
 --==================================================
 -- DATA
 --==================================================
 
-local NPCList = {}
-local PlayerList = {}
+local NPCs = {}
+local PlayerData = {}
 
 local CurrentTab = "ALL"
 local ESPEnabled = false
-local ESPObjects = {}
+local ESPData = {}
 
 --==================================================
 -- GUI
 --==================================================
 
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "NPCPlayerHub"
-Gui.ResetOnSpawn = false
-Gui.Parent = PlayerGui
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "NPCPlayerHub_V2"
+GUI.ResetOnSpawn = false
+GUI.IgnoreGuiInset = true
+GUI.Parent = PG
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(390, 560)
-Main.Position = UDim2.new(0.5, -195, 0.5, -280)
-Main.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+Main.Size = UDim2.fromOffset(400, 570)
+Main.Position = UDim2.new(0.5, -200, 0.5, -285)
+Main.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
 Main.BorderSizePixel = 0
-Main.Parent = Gui
+Main.Parent = GUI
 
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
@@ -56,90 +61,86 @@ MainCorner.Parent = Main
 --==================================================
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -20, 0, 40)
+Title.Size = UDim2.new(1, -20, 0, 38)
 Title.Position = UDim2.fromOffset(10, 5)
 Title.BackgroundTransparency = 1
-Title.Text = "NPC + PLAYER HUB"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.TextSize = 19
+Title.Text = "NPC + PLAYER HUB V2"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.TextSize = 18
 Title.Font = Enum.Font.GothamBold
 Title.Parent = Main
 
 --==================================================
--- LOAD BUTTON
+-- LOAD
 --==================================================
 
-local LoadButton = Instance.new("TextButton")
-LoadButton.Size = UDim2.new(1, -20, 0, 40)
-LoadButton.Position = UDim2.fromOffset(10, 48)
-LoadButton.BackgroundColor3 = Color3.fromRGB(65, 120, 220)
-LoadButton.BorderSizePixel = 0
-LoadButton.Text = "LOAD NPC + PLAYER"
-LoadButton.TextColor3 = Color3.new(1, 1, 1)
-LoadButton.TextSize = 13
-LoadButton.Font = Enum.Font.GothamBold
-LoadButton.Parent = Main
+local Load = Instance.new("TextButton")
+Load.Size = UDim2.new(1, -20, 0, 42)
+Load.Position = UDim2.fromOffset(10, 48)
+Load.BackgroundColor3 = Color3.fromRGB(65, 120, 220)
+Load.BorderSizePixel = 0
+Load.Text = "LOAD NPC + PLAYER"
+Load.TextColor3 = Color3.new(1,1,1)
+Load.TextSize = 13
+Load.Font = Enum.Font.GothamBold
+Load.Parent = Main
 
 local LoadCorner = Instance.new("UICorner")
 LoadCorner.CornerRadius = UDim.new(0, 8)
-LoadCorner.Parent = LoadButton
+LoadCorner.Parent = Load
 
 --==================================================
--- ESP BUTTON
+-- ESP
 --==================================================
 
-local ESPButton = Instance.new("TextButton")
-ESPButton.Size = UDim2.new(1, -20, 0, 35)
-ESPButton.Position = UDim2.fromOffset(10, 93)
-ESPButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-ESPButton.BorderSizePixel = 0
-ESPButton.Text = "ESP: OFF"
-ESPButton.TextColor3 = Color3.new(1, 1, 1)
-ESPButton.TextSize = 13
-ESPButton.Font = Enum.Font.GothamBold
-ESPButton.Parent = Main
+local ESP = Instance.new("TextButton")
+ESP.Size = UDim2.new(1, -20, 0, 36)
+ESP.Position = UDim2.fromOffset(10, 96)
+ESP.BackgroundColor3 = Color3.fromRGB(45,45,55)
+ESP.BorderSizePixel = 0
+ESP.Text = "ESP: OFF"
+ESP.TextColor3 = Color3.new(1,1,1)
+ESP.TextSize = 13
+ESP.Font = Enum.Font.GothamBold
+ESP.Parent = Main
 
 local ESPCorner = Instance.new("UICorner")
 ESPCorner.CornerRadius = UDim.new(0, 7)
-ESPCorner.Parent = ESPButton
+ESPCorner.Parent = ESP
 
 --==================================================
 -- TABS
 --==================================================
 
-local TabFrame = Instance.new("Frame")
-TabFrame.Size = UDim2.new(1, -20, 0, 35)
-TabFrame.Position = UDim2.fromOffset(10, 135)
-TabFrame.BackgroundTransparency = 1
-TabFrame.Parent = Main
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1, -20, 0, 36)
+Tabs.Position = UDim2.fromOffset(10, 140)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Main
 
-local function CreateTab(Name, X)
+local function MakeTab(text, x)
 
-	local Button = Instance.new("TextButton")
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(0.32, -4, 1, 0)
+	b.Position = UDim2.new(x, 0, 0, 0)
+	b.BackgroundColor3 = Color3.fromRGB(45,45,55)
+	b.BorderSizePixel = 0
+	b.Text = text
+	b.TextColor3 = Color3.new(1,1,1)
+	b.TextSize = 12
+	b.Font = Enum.Font.GothamBold
+	b.Parent = Tabs
 
-	Button.Size = UDim2.new(0.32, -4, 1, 0)
-	Button.Position = UDim2.new(X, 0, 0, 0)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0,7)
+	c.Parent = b
 
-	Button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-	Button.BorderSizePixel = 0
-
-	Button.Text = Name
-	Button.TextColor3 = Color3.new(1, 1, 1)
-	Button.TextSize = 12
-	Button.Font = Enum.Font.GothamBold
-
-	Button.Parent = TabFrame
-
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 7)
-	Corner.Parent = Button
-
-	return Button
+	return b
 end
 
-local AllTab = CreateTab("ALL", 0)
-local NPCTab = CreateTab("NPC", 0.34)
-local PlayerTab = CreateTab("PLAYER", 0.68)
+local AllTab = MakeTab("ALL", 0)
+local NPCTab = MakeTab("NPC", 0.34)
+local PlayerTab = MakeTab("PLAYER", 0.68)
 
 --==================================================
 -- SEARCH
@@ -147,19 +148,20 @@ local PlayerTab = CreateTab("PLAYER", 0.68)
 
 local Search = Instance.new("TextBox")
 Search.Size = UDim2.new(1, -20, 0, 35)
-Search.Position = UDim2.fromOffset(10, 178)
-Search.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
+Search.Position = UDim2.fromOffset(10, 184)
+Search.BackgroundColor3 = Color3.fromRGB(35,35,43)
 Search.BorderSizePixel = 0
 Search.PlaceholderText = "Search loaded NPC / Player..."
+Search.PlaceholderColor3 = Color3.fromRGB(140,140,140)
 Search.Text = ""
-Search.TextColor3 = Color3.new(1, 1, 1)
-Search.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+Search.TextColor3 = Color3.new(1,1,1)
 Search.TextSize = 13
 Search.Font = Enum.Font.Gotham
+Search.ClearTextOnFocus = false
 Search.Parent = Main
 
 local SearchCorner = Instance.new("UICorner")
-SearchCorner.CornerRadius = UDim.new(0, 7)
+SearchCorner.CornerRadius = UDim.new(0,7)
 SearchCorner.Parent = Search
 
 --==================================================
@@ -167,47 +169,41 @@ SearchCorner.Parent = Search
 --==================================================
 
 local List = Instance.new("ScrollingFrame")
-List.Size = UDim2.new(1, -20, 1, -225)
-List.Position = UDim2.fromOffset(10, 223)
-List.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+List.Size = UDim2.new(1, -20, 1, -230)
+List.Position = UDim2.fromOffset(10, 229)
+List.BackgroundColor3 = Color3.fromRGB(29,29,36)
 List.BorderSizePixel = 0
 List.ScrollBarThickness = 5
 List.CanvasSize = UDim2.new()
 List.Parent = Main
 
 local ListCorner = Instance.new("UICorner")
-ListCorner.CornerRadius = UDim.new(0, 8)
+ListCorner.CornerRadius = UDim.new(0,8)
 ListCorner.Parent = List
 
 local Layout = Instance.new("UIListLayout")
-Layout.Padding = UDim.new(0, 5)
+Layout.Padding = UDim.new(0,5)
 Layout.Parent = List
 
 --==================================================
--- GET ROOT
+-- ROOT
 --==================================================
 
-local function GetRoot(Object)
+local function GetRoot(obj)
 
-	if not Object then
+	if not obj then
 		return nil
 	end
 
-	if Object:IsA("BasePart") then
-		return Object
+	if obj:IsA("BasePart") then
+		return obj
 	end
 
-	if Object:IsA("Model") then
-
-		if Object.PrimaryPart then
-			return Object.PrimaryPart
-		end
+	if obj:IsA("Model") and obj.PrimaryPart then
+		return obj.PrimaryPart
 	end
 
-	return Object:FindFirstChildWhichIsA(
-		"BasePart",
-		true
-	)
+	return obj:FindFirstChildWhichIsA("BasePart", true)
 end
 
 --==================================================
@@ -216,40 +212,34 @@ end
 
 local function ScanNPC()
 
-	table.clear(NPCList)
+	table.clear(NPCs)
 
-	for _, Object in ipairs(workspace:GetDescendants()) do
+	for _, obj in ipairs(workspace:GetDescendants()) do
 
-		if Object:IsA("Model") then
+		if obj:IsA("Model") then
 
-			local Humanoid =
-				Object:FindFirstChildOfClass("Humanoid")
+			local hum =
+				obj:FindFirstChildOfClass("Humanoid")
 
-			if Humanoid then
-
-				local Player =
-					Players:GetPlayerFromCharacter(Object)
-
-				if not Player then
-					table.insert(NPCList, Object)
-				end
+			if hum and not Players:GetPlayerFromCharacter(obj) then
+				table.insert(NPCs, obj)
 			end
 		end
 	end
 end
 
 --==================================================
--- SCAN PLAYER
+-- SCAN PLAYERS
 --==================================================
 
 local function ScanPlayers()
 
-	table.clear(PlayerList)
+	table.clear(PlayerData)
 
-	for _, Player in ipairs(Players:GetPlayers()) do
+	for _, plr in ipairs(Players:GetPlayers()) do
 
-		if Player ~= LocalPlayer then
-			table.insert(PlayerList, Player)
+		if plr ~= LP then
+			table.insert(PlayerData, plr)
 		end
 	end
 end
@@ -258,116 +248,108 @@ end
 -- TELEPORT
 --==================================================
 
-local function TeleportTo(Object)
+local function TeleportTo(obj)
 
-	local TargetPart
+	local target
 
-	if typeof(Object) == "Instance" then
+	if typeof(obj) == "Instance" then
+		target = GetRoot(obj)
 
-		TargetPart = GetRoot(Object)
+	elseif typeof(obj) == "table" then
 
-	elseif typeof(Object) == "table" then
-
-		if Object.Character then
-			TargetPart =
-				GetRoot(Object.Character)
+		if obj.Character then
+			target = GetRoot(obj.Character)
 		end
 	end
 
-	if not TargetPart then
+	if not target then
 		return
 	end
 
-	local Character = LocalPlayer.Character
-
-	if not Character then
+	local char = LP.Character
+	if not char then
 		return
 	end
 
-	local Root =
-		Character:FindFirstChild("HumanoidRootPart")
-
-	if not Root then
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then
 		return
 	end
 
-	Root.CFrame =
-		TargetPart.CFrame
-		* CFrame.new(0, 3, 0)
+	root.CFrame =
+		target.CFrame * CFrame.new(0, 3, 0)
 end
 
 --==================================================
--- REMOVE ESP
+-- ESP REMOVE
 --==================================================
 
-local function RemoveESP(Object)
+local function RemoveESP(obj)
 
-	local Data = ESPObjects[Object]
+	local data = ESPData[obj]
 
-	if not Data then
+	if not data then
 		return
 	end
 
-	if Data.Highlight then
-		Data.Highlight:Destroy()
+	if data.Highlight then
+		data.Highlight:Destroy()
 	end
 
-	if Data.Billboard then
-		Data.Billboard:Destroy()
+	if data.Billboard then
+		data.Billboard:Destroy()
 	end
 
-	ESPObjects[Object] = nil
+	ESPData[obj] = nil
 end
 
 --==================================================
--- ADD ESP
+-- ESP ADD
 --==================================================
 
-local function AddESP(Object, DisplayName)
+local function AddESP(obj, name)
 
-	if not Object or not Object.Parent then
+	if not obj or not obj.Parent then
 		return
 	end
 
-	local Part = GetRoot(Object)
-
-	if not Part then
+	local root = GetRoot(obj)
+	if not root then
 		return
 	end
 
-	RemoveESP(Object)
+	RemoveESP(obj)
 
-	local Highlight = Instance.new("Highlight")
-	Highlight.Name = "NPCPlayerESP"
-	Highlight.Adornee = Object
-	Highlight.DepthMode =
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "HubESP"
+	highlight.Adornee = obj
+	highlight.DepthMode =
 		Enum.HighlightDepthMode.AlwaysOnTop
-	Highlight.FillTransparency = 0.75
-	Highlight.OutlineTransparency = 0
-	Highlight.Parent = Object
+	highlight.FillTransparency = 0.75
+	highlight.OutlineTransparency = 0
+	highlight.Parent = obj
 
-	local Billboard = Instance.new("BillboardGui")
-	Billboard.Name = "NPCPlayerName"
-	Billboard.Adornee = Part
-	Billboard.Size = UDim2.fromOffset(220, 40)
-	Billboard.StudsOffset =
-		Vector3.new(0, 3, 0)
-	Billboard.AlwaysOnTop = true
-	Billboard.Parent = Part
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "HubName"
+	billboard.Adornee = root
+	billboard.Size = UDim2.fromOffset(220, 35)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = root
 
-	local Text = Instance.new("TextLabel")
-	Text.Size = UDim2.fromScale(1, 1)
-	Text.BackgroundTransparency = 1
-	Text.Text = DisplayName
-	Text.TextColor3 = Color3.new(1, 1, 1)
-	Text.TextStrokeTransparency = 0
-	Text.TextSize = 14
-	Text.Font = Enum.Font.GothamBold
-	Text.Parent = Billboard
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1,1)
+	text.BackgroundTransparency = 1
+	text.Text = name
+	text.TextColor3 = Color3.new(1,1,1)
+	text.TextStrokeTransparency = 0
+	text.TextSize = 14
+	text.Font = Enum.Font.GothamBold
+	text.Parent = billboard
 
-	ESPObjects[Object] = {
-		Highlight = Highlight,
-		Billboard = Billboard
+	ESPData[obj] = {
+		Highlight = highlight,
+		Billboard = billboard
 	}
 end
 
@@ -377,35 +359,29 @@ end
 
 local function UpdateESP()
 
-	for Object in pairs(ESPObjects) do
-		RemoveESP(Object)
+	for obj in pairs(ESPData) do
+		RemoveESP(obj)
 	end
 
 	if not ESPEnabled then
 		return
 	end
 
-	-- NPC
-	for _, NPC in ipairs(NPCList) do
+	for _, npc in ipairs(NPCs) do
 
-		if NPC.Parent then
-			AddESP(
-				NPC,
-				"NPC: " .. NPC.Name
-			)
+		if npc.Parent then
+			AddESP(npc, "NPC: " .. npc.Name)
 		end
 	end
 
-	-- PLAYER
-	for _, Player in ipairs(PlayerList) do
+	for _, plr in ipairs(PlayerData) do
 
-		local Character = Player.Character
+		local char = plr.Character
 
-		if Character and Character.Parent then
-
+		if char and char.Parent then
 			AddESP(
-				Character,
-				"PLAYER: " .. Player.Name
+				char,
+				"PLAYER: " .. plr.Name
 			)
 		end
 	end
@@ -417,71 +393,58 @@ end
 
 local function ClearList()
 
-	for _, Child in ipairs(List:GetChildren()) do
+	for _, child in ipairs(List:GetChildren()) do
 
-		if Child:IsA("Frame") then
-			Child:Destroy()
+		if child:IsA("Frame") then
+			child:Destroy()
 		end
 	end
 end
 
 --==================================================
--- CREATE ITEM
+-- ITEM
 --==================================================
 
-local function CreateItem(Name, Type, Object)
+local function CreateItem(name, typeName, obj)
 
-	local Item = Instance.new("Frame")
+	local item = Instance.new("Frame")
+	item.Size = UDim2.new(1, -10, 0, 45)
+	item.BackgroundColor3 = Color3.fromRGB(42,42,50)
+	item.BorderSizePixel = 0
+	item.Parent = List
 
-	Item.Size = UDim2.new(1, -10, 0, 45)
-	Item.BackgroundColor3 =
-		Color3.fromRGB(40, 40, 48)
-	Item.BorderSizePixel = 0
-	Item.Parent = List
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0,6)
+	corner.Parent = item
 
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 6)
-	Corner.Parent = Item
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -100, 1, 0)
+	label.Position = UDim2.fromOffset(10,0)
+	label.BackgroundTransparency = 1
+	label.Text = "[" .. typeName .. "] " .. name
+	label.TextColor3 = Color3.new(1,1,1)
+	label.TextSize = 12
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Font = Enum.Font.Gotham
+	label.Parent = item
 
-	local Label = Instance.new("TextLabel")
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.fromOffset(80,30)
+	button.Position = UDim2.new(1,-88,0.5,-15)
+	button.BackgroundColor3 = Color3.fromRGB(65,120,220)
+	button.BorderSizePixel = 0
+	button.Text = "TELEPORT"
+	button.TextColor3 = Color3.new(1,1,1)
+	button.TextSize = 10
+	button.Font = Enum.Font.GothamBold
+	button.Parent = item
 
-	Label.Size = UDim2.new(1, -100, 1, 0)
-	Label.Position = UDim2.fromOffset(10, 0)
-	Label.BackgroundTransparency = 1
+	local bc = Instance.new("UICorner")
+	bc.CornerRadius = UDim.new(0,5)
+	bc.Parent = button
 
-	Label.Text =
-		"[" .. Type .. "] " .. Name
-
-	Label.TextColor3 = Color3.new(1, 1, 1)
-	Label.TextSize = 12
-	Label.TextXAlignment =
-		Enum.TextXAlignment.Left
-	Label.Font = Enum.Font.Gotham
-
-	Label.Parent = Item
-
-	local Button = Instance.new("TextButton")
-
-	Button.Size = UDim2.fromOffset(80, 30)
-	Button.Position =
-		UDim2.new(1, -88, 0.5, -15)
-
-	Button.BackgroundColor3 =
-		Color3.fromRGB(65, 120, 220)
-
-	Button.BorderSizePixel = 0
-	Button.Text = "TELEPORT"
-	Button.TextColor3 = Color3.new(1, 1, 1)
-	Button.TextSize = 10
-	Button.Font = Enum.Font.GothamBold
-	Button.Parent = Item
-
-	local ButtonCorner = Instance.new("UICorner")
-	ButtonCorner.CornerRadius = UDim.new(0, 5)
-	ButtonCorner.Parent = Button
-
-	Button.Activated:Connect(function()
-		TeleportTo(Object)
+	button.Activated:Connect(function()
+		TeleportTo(obj)
 	end)
 end
 
@@ -493,53 +456,48 @@ local function Refresh()
 
 	ClearList()
 
-	local Query =
-		string.lower(Search.Text)
+	local query = string.lower(Search.Text)
 
-	local function Match(Name)
+	local function Match(name)
 
-		return Query == ""
+		return query == ""
 			or string.find(
-				string.lower(Name),
-				Query,
+				string.lower(name),
+				query,
 				1,
 				true
 			)
 	end
 
-	-- NPC
 	if CurrentTab == "ALL"
 		or CurrentTab == "NPC"
 	then
 
-		for _, NPC in ipairs(NPCList) do
+		for _, npc in ipairs(NPCs) do
 
-			if NPC.Parent
-				and Match(NPC.Name)
-			then
+			if npc.Parent and Match(npc.Name) then
 
 				CreateItem(
-					NPC.Name,
+					npc.Name,
 					"NPC",
-					NPC
+					npc
 				)
 			end
 		end
 	end
 
-	-- PLAYER
 	if CurrentTab == "ALL"
 		or CurrentTab == "PLAYER"
 	then
 
-		for _, Player in ipairs(PlayerList) do
+		for _, plr in ipairs(PlayerData) do
 
-			if Match(Player.Name) then
+			if Match(plr.Name) then
 
 				CreateItem(
-					Player.Name,
+					plr.Name,
 					"PLAYER",
-					Player
+					plr
 				)
 			end
 		end
@@ -559,18 +517,18 @@ end
 -- LOAD
 --==================================================
 
-LoadButton.Activated:Connect(function()
+Load.Activated:Connect(function()
 
-	LoadButton.Text = "LOADING..."
+	Load.Text = "LOADING..."
 
 	ScanNPC()
 	ScanPlayers()
 
-	LoadButton.Text =
-		"LOADED: "
-		.. #NPCList
+	Load.Text =
+		"LOADED "
+		.. #NPCs
 		.. " NPC / "
-		.. #PlayerList
+		.. #PlayerData
 		.. " PLAYER"
 
 	Refresh()
@@ -584,15 +542,14 @@ end)
 -- ESP TOGGLE
 --==================================================
 
-ESPButton.Activated:Connect(function()
+ESP.Activated:Connect(function()
 
 	ESPEnabled = not ESPEnabled
 
-	if ESPEnabled then
-		ESPButton.Text = "ESP: ON"
-	else
-		ESPButton.Text = "ESP: OFF"
-	end
+	ESP.Text =
+		ESPEnabled
+		and "ESP: ON"
+		or "ESP: OFF"
 
 	UpdateESP()
 end)
@@ -602,24 +559,18 @@ end)
 --==================================================
 
 AllTab.Activated:Connect(function()
-
 	CurrentTab = "ALL"
 	Refresh()
-
 end)
 
 NPCTab.Activated:Connect(function()
-
 	CurrentTab = "NPC"
 	Refresh()
-
 end)
 
 PlayerTab.Activated:Connect(function()
-
 	CurrentTab = "PLAYER"
 	Refresh()
-
 end)
 
 --==================================================
@@ -634,57 +585,56 @@ end)
 -- DRAG
 --==================================================
 
-local Dragging = false
-local DragStart
-local StartPosition
+local dragging = false
+local dragStart
+local startPos
 
-Title.InputBegan:Connect(function(Input)
+Title.InputBegan:Connect(function(input)
 
-	if Input.UserInputType ==
+	if input.UserInputType ==
 		Enum.UserInputType.MouseButton1
-		or Input.UserInputType ==
+		or input.UserInputType ==
 		Enum.UserInputType.Touch
 	then
 
-		Dragging = true
-		DragStart = Input.Position
-		StartPosition = Main.Position
+		dragging = true
+		dragStart = input.Position
+		startPos = Main.Position
 
-		Input.Changed:Connect(function()
+		input.Changed:Connect(function()
 
-			if Input.UserInputState ==
+			if input.UserInputState ==
 				Enum.UserInputState.End
 			then
-				Dragging = false
+				dragging = false
 			end
-
 		end)
 	end
 end)
 
-UserInputService.InputChanged:Connect(function(Input)
+UIS.InputChanged:Connect(function(input)
 
-	if not Dragging then
+	if not dragging then
 		return
 	end
 
-	if Input.UserInputType ==
+	if input.UserInputType ==
 		Enum.UserInputType.MouseMovement
-		or Input.UserInputType ==
+		or input.UserInputType ==
 		Enum.UserInputType.Touch
 	then
 
-		local Delta =
-			Input.Position - DragStart
+		local delta =
+			input.Position - dragStart
 
 		Main.Position = UDim2.new(
-			StartPosition.X.Scale,
-			StartPosition.X.Offset + Delta.X,
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
 
-			StartPosition.Y.Scale,
-			StartPosition.Y.Offset + Delta.Y
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
 		)
 	end
 end)
 
-print("[NPCPlayerHub] Loaded")
+print("[NPCPlayerHub_V2] FULL HUB LOADED")
