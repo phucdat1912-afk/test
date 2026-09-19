@@ -1,6 +1,6 @@
 --==================================================
--- NPC TELEPORT UI
--- Clean / Modern / Searchable
+-- NPC + PLAYER TELEPORT
+-- MANUAL LOAD VERSION
 --==================================================
 
 local Players = game:GetService("Players")
@@ -13,26 +13,23 @@ local Player = Players.LocalPlayer
 --==================================================
 
 local Gui = Instance.new("ScreenGui")
-Gui.Name = "NPCTeleportUI"
+Gui.Name = "TeleportUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.Parent = Player:WaitForChild("PlayerGui")
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(360, 480)
-Main.Position = UDim2.new(0.5, -180, 0.5, -240)
+Main.Size = UDim2.fromOffset(380, 520)
+Main.Position = UDim2.new(0.5, -190, 0.5, -260)
 Main.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 Main.BorderSizePixel = 0
 Main.Parent = Gui
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
-MainCorner.Parent = Main
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
 local Stroke = Instance.new("UIStroke")
 Stroke.Color = Color3.fromRGB(65, 65, 80)
-Stroke.Thickness = 1
-Stroke.Transparency = 0.25
+Stroke.Transparency = 0.2
 Stroke.Parent = Main
 
 --==================================================
@@ -45,31 +42,47 @@ Header.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
 Header.BorderSizePixel = 0
 Header.Parent = Main
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 14)
-HeaderCorner.Parent = Header
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
 
 local Title = Instance.new("TextLabel")
-Title.Position = UDim2.fromOffset(18, 10)
+Title.Position = UDim2.fromOffset(18, 8)
 Title.Size = UDim2.new(1, -36, 0, 28)
 Title.BackgroundTransparency = 1
-Title.Text = "NPC TELEPORT"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Text = "TELEPORT"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
 Title.TextSize = 21
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
 local Count = Instance.new("TextLabel")
-Count.Position = UDim2.fromOffset(19, 38)
-Count.Size = UDim2.new(1, -38, 0, 18)
+Count.Position = UDim2.fromOffset(19, 36)
+Count.Size = UDim2.new(1, -140, 0, 18)
 Count.BackgroundTransparency = 1
-Count.Text = "0 NPCs found"
-Count.TextColor3 = Color3.fromRGB(145, 145, 160)
+Count.Text = "Not loaded"
+Count.TextColor3 = Color3.fromRGB(145,145,160)
 Count.TextSize = 12
 Count.Font = Enum.Font.Gotham
 Count.TextXAlignment = Enum.TextXAlignment.Left
 Count.Parent = Header
+
+--==================================================
+-- LOAD BUTTON
+--==================================================
+
+local LoadButton = Instance.new("TextButton")
+LoadButton.AnchorPoint = Vector2.new(1, 0.5)
+LoadButton.Position = UDim2.new(1, -15, 0.5, 0)
+LoadButton.Size = UDim2.fromOffset(85, 34)
+LoadButton.BackgroundColor3 = Color3.fromRGB(55,105,220)
+LoadButton.BorderSizePixel = 0
+LoadButton.Text = "LOAD"
+LoadButton.TextColor3 = Color3.new(1,1,1)
+LoadButton.TextSize = 12
+LoadButton.Font = Enum.Font.GothamBold
+LoadButton.Parent = Header
+
+Instance.new("UICorner", LoadButton).CornerRadius = UDim.new(0, 8)
 
 --==================================================
 -- SEARCH
@@ -78,28 +91,21 @@ Count.Parent = Header
 local SearchBox = Instance.new("TextBox")
 SearchBox.Position = UDim2.fromOffset(15, 78)
 SearchBox.Size = UDim2.new(1, -30, 0, 42)
-SearchBox.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+SearchBox.BackgroundColor3 = Color3.fromRGB(30,30,40)
 SearchBox.BorderSizePixel = 0
-SearchBox.PlaceholderText = "  Search NPC..."
-SearchBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 135)
+SearchBox.PlaceholderText = "Search NPC / Player..."
+SearchBox.PlaceholderColor3 = Color3.fromRGB(120,120,135)
 SearchBox.Text = ""
-SearchBox.TextColor3 = Color3.fromRGB(235, 235, 240)
+SearchBox.TextColor3 = Color3.fromRGB(235,235,240)
 SearchBox.TextSize = 14
 SearchBox.Font = Enum.Font.Gotham
 SearchBox.ClearTextOnFocus = false
 SearchBox.Parent = Main
 
-local SearchCorner = Instance.new("UICorner")
-SearchCorner.CornerRadius = UDim.new(0, 10)
-SearchCorner.Parent = SearchBox
-
-local SearchStroke = Instance.new("UIStroke")
-SearchStroke.Color = Color3.fromRGB(55, 55, 70)
-SearchStroke.Thickness = 1
-SearchStroke.Parent = SearchBox
+Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 10)
 
 --==================================================
--- NPC LIST
+-- LIST
 --==================================================
 
 local List = Instance.new("ScrollingFrame")
@@ -108,7 +114,7 @@ List.Size = UDim2.new(1, -30, 1, -147)
 List.BackgroundTransparency = 1
 List.BorderSizePixel = 0
 List.ScrollBarThickness = 4
-List.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 110)
+List.ScrollBarImageColor3 = Color3.fromRGB(90,90,110)
 List.CanvasSize = UDim2.new()
 List.AutomaticCanvasSize = Enum.AutomaticSize.Y
 List.Parent = Main
@@ -123,7 +129,7 @@ Padding.PaddingBottom = UDim.new(0, 5)
 Padding.Parent = List
 
 --==================================================
--- ROOT PART
+-- ROOT
 --==================================================
 
 local function getRoot(model)
@@ -132,170 +138,208 @@ local function getRoot(model)
 end
 
 --==================================================
--- NPC CHECK
+-- DATA
 --==================================================
 
-local function isNPC(model)
-    if not model:IsA("Model") then
-        return false
-    end
-
-    if model == Player.Character then
-        return false
-    end
-
-    local humanoid = model:FindFirstChildOfClass("Humanoid")
-    local root = getRoot(model)
-
-    return humanoid ~= nil and root ~= nil
-end
+local LoadedTargets = {}
+local Loaded = false
 
 --==================================================
 -- TELEPORT
 --==================================================
 
-local function teleportTo(npc)
+local function teleportTo(target)
     local character = Player.Character
     if not character then
         return
     end
 
     local playerRoot = getRoot(character)
-    local npcRoot = getRoot(npc)
+    local targetRoot = getRoot(target)
 
-    if not playerRoot or not npcRoot then
-        return
+    if playerRoot and targetRoot then
+        playerRoot.CFrame = targetRoot.CFrame + Vector3.new(0, 3, 0)
     end
-
-    playerRoot.CFrame = npcRoot.CFrame + Vector3.new(0, 3, 0)
 end
 
 --==================================================
 -- BUTTON
 --==================================================
 
-local function createNPCButton(npc)
+local function createButton(target, targetType)
     local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, -8, 0, 48)
-    Button.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
+
+    Button.Size = UDim2.new(1, -8, 0, 50)
+    Button.BackgroundColor3 = Color3.fromRGB(28,28,38)
     Button.BorderSizePixel = 0
     Button.Text = ""
     Button.AutoButtonColor = false
     Button.Parent = List
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 9)
-    Corner.Parent = Button
-
-    local ButtonStroke = Instance.new("UIStroke")
-    ButtonStroke.Color = Color3.fromRGB(48, 48, 62)
-    ButtonStroke.Thickness = 1
-    ButtonStroke.Parent = Button
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 9)
 
     local Name = Instance.new("TextLabel")
-    Name.Position = UDim2.fromOffset(14, 0)
-    Name.Size = UDim2.new(1, -105, 1, 0)
+    Name.Position = UDim2.fromOffset(14, 5)
+    Name.Size = UDim2.new(1, -110, 0, 23)
     Name.BackgroundTransparency = 1
-    Name.Text = npc.Name
-    Name.TextColor3 = Color3.fromRGB(235, 235, 240)
+    Name.Text = target.Name
+    Name.TextColor3 = Color3.fromRGB(235,235,240)
     Name.TextSize = 14
     Name.Font = Enum.Font.GothamMedium
     Name.TextXAlignment = Enum.TextXAlignment.Left
     Name.TextTruncate = Enum.TextTruncate.AtEnd
     Name.Parent = Button
 
-    local Teleport = Instance.new("TextLabel")
-    Teleport.AnchorPoint = Vector2.new(1, 0.5)
-    Teleport.Position = UDim2.new(1, -10, 0.5, 0)
-    Teleport.Size = UDim2.fromOffset(75, 28)
-    Teleport.BackgroundColor3 = Color3.fromRGB(55, 105, 220)
-    Teleport.Text = "TELEPORT"
-    Teleport.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Teleport.TextSize = 10
-    Teleport.Font = Enum.Font.GothamBold
-    Teleport.Parent = Button
+    local Type = Instance.new("TextLabel")
+    Type.Position = UDim2.fromOffset(14, 27)
+    Type.Size = UDim2.new(1, -110, 0, 16)
+    Type.BackgroundTransparency = 1
+    Type.Text = targetType
+    Type.TextColor3 = Color3.fromRGB(130,130,145)
+    Type.TextSize = 10
+    Type.Font = Enum.Font.Gotham
+    Type.TextXAlignment = Enum.TextXAlignment.Left
+    Type.Parent = Button
 
-    local TeleportCorner = Instance.new("UICorner")
-    TeleportCorner.CornerRadius = UDim.new(0, 7)
-    TeleportCorner.Parent = Teleport
+    local TP = Instance.new("TextLabel")
+    TP.AnchorPoint = Vector2.new(1, 0.5)
+    TP.Position = UDim2.new(1, -10, 0.5, 0)
+    TP.Size = UDim2.fromOffset(75, 28)
+    TP.BackgroundColor3 = Color3.fromRGB(55,105,220)
+    TP.Text = "TELEPORT"
+    TP.TextColor3 = Color3.new(1,1,1)
+    TP.TextSize = 10
+    TP.Font = Enum.Font.GothamBold
+    TP.Parent = Button
+
+    Instance.new("UICorner", TP).CornerRadius = UDim.new(0, 7)
 
     Button.MouseEnter:Connect(function()
-        Button.BackgroundColor3 = Color3.fromRGB(36, 36, 48)
-        Teleport.BackgroundColor3 = Color3.fromRGB(70, 120, 235)
+        Button.BackgroundColor3 = Color3.fromRGB(37,37,49)
+        TP.BackgroundColor3 = Color3.fromRGB(70,120,235)
     end)
 
     Button.MouseLeave:Connect(function()
-        Button.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-        Teleport.BackgroundColor3 = Color3.fromRGB(55, 105, 220)
+        Button.BackgroundColor3 = Color3.fromRGB(28,28,38)
+        TP.BackgroundColor3 = Color3.fromRGB(55,105,220)
     end)
 
     Button.MouseButton1Click:Connect(function()
-        teleportTo(npc)
+        teleportTo(target)
     end)
-
-    return Button
 end
 
 --==================================================
--- REFRESH
+-- FILTER LOADED DATA
 --==================================================
 
-local function refresh()
+local function render()
+    if not Loaded then
+        return
+    end
+
     for _, child in ipairs(List:GetChildren()) do
         if child:IsA("TextButton") then
             child:Destroy()
         end
     end
 
-    local npcs = {}
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if isNPC(obj) then
-            table.insert(npcs, obj)
-        end
-    end
-
-    table.sort(npcs, function(a, b)
-        return a.Name:lower() < b.Name:lower()
-    end)
-
     local search = SearchBox.Text:lower()
     local shown = 0
 
-    for _, npc in ipairs(npcs) do
-        if search == "" or npc.Name:lower():find(search, 1, true) then
-            createNPCButton(npc)
+    for _, data in ipairs(LoadedTargets) do
+        if data.Target
+            and data.Target.Parent
+            and getRoot(data.Target)
+            and (
+                search == ""
+                or data.Target.Name:lower():find(search, 1, true)
+            ) then
+
+            createButton(data.Target, data.Type)
             shown += 1
         end
     end
 
-    Count.Text = string.format("%d NPCs found", shown)
+    Count.Text = string.format("%d loaded • %d shown", #LoadedTargets, shown)
 end
+
+--==================================================
+-- MANUAL LOAD
+--==================================================
+
+local function loadTargets()
+    LoadedTargets = {}
+
+    -- Players
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character
+            and plr.Character ~= Player.Character
+            and getRoot(plr.Character) then
+
+            table.insert(LoadedTargets, {
+                Target = plr.Character,
+                Type = "PLAYER"
+            })
+        end
+    end
+
+    -- NPCs
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model")
+            and obj ~= Player.Character
+            and obj:FindFirstChildOfClass("Humanoid")
+            and getRoot(obj) then
+
+            -- Không thêm Character của Player lần nữa
+            local isPlayerCharacter = false
+
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if obj == plr.Character then
+                    isPlayerCharacter = true
+                    break
+                end
+            end
+
+            if not isPlayerCharacter then
+                table.insert(LoadedTargets, {
+                    Target = obj,
+                    Type = "NPC"
+                })
+            end
+        end
+    end
+
+    Loaded = true
+    render()
+end
+
+--==================================================
+-- LOAD CLICK
+--==================================================
+
+LoadButton.MouseButton1Click:Connect(function()
+    LoadButton.Text = "LOADING..."
+
+    task.wait()
+
+    loadTargets()
+
+    LoadButton.Text = "RELOAD"
+end)
 
 --==================================================
 -- SEARCH
 --==================================================
 
-SearchBox:GetPropertyChangedSignal("Text"):Connect(refresh)
-
---==================================================
--- AUTO REFRESH
---==================================================
-
-workspace.DescendantAdded:Connect(function(obj)
-    if obj:IsA("Model") then
-        task.delay(0.15, refresh)
-    end
-end)
-
-workspace.DescendantRemoving:Connect(function(obj)
-    if obj:IsA("Model") then
-        task.defer(refresh)
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    if Loaded then
+        render()
     end
 end)
 
 --==================================================
--- DRAG WINDOW
+-- DRAG
 --==================================================
 
 local dragging = false
@@ -336,9 +380,3 @@ UserInputService.InputChanged:Connect(function(input)
         )
     end
 end)
-
---==================================================
--- START
---==================================================
-
-refresh()
