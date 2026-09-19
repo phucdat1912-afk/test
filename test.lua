@@ -1,630 +1,763 @@
---==================================================
+--========================================================
 -- PROJECT SLAYERS 2
--- FULL NPC TELEPORT HUB
--- LOAD NPC = SCAN ENTIRE WORKSPACE
---==================================================
+-- NPC TELEPORT HUB
+-- FULL MAP SCAN + DIRECT MUZAN SUPPORT
+--========================================================
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local UIS = game:GetService("UserInputService")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local LP = Players.LocalPlayer
 
---==================================================
--- REMOVE OLD UI
---==================================================
+--========================================================
+-- CLEAN
+--========================================================
 
 for _, name in ipairs({
     "ProjectSlayers2Hub",
     "NPCTeleportUI",
     "TeleportUI"
 }) do
-    local old = PlayerGui:FindFirstChild(name)
+    local old = CoreGui:FindFirstChild(name)
     if old then
         old:Destroy()
     end
 end
 
---==================================================
+--========================================================
 -- DATA
---==================================================
+--========================================================
 
-local LoadedTargets = {}
+local LoadedNPCs = {}
+local Seen = {}
+
 local Loaded = false
 local CurrentTab = "ALL"
 
---==================================================
--- HELPERS
---==================================================
-
-local function getCharacterRoot(character)
-    if not character then
-        return nil
-    end
-
-    return character:FindFirstChild("HumanoidRootPart")
-        or character.PrimaryPart
-end
-
-local function isPlayerCharacter(model, playerCharacters)
-    return playerCharacters[model] == true
-end
-
---==================================================
+--========================================================
 -- GUI
---==================================================
+--========================================================
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ProjectSlayers2Hub"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = PlayerGui
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "ProjectSlayers2Hub"
+GUI.ResetOnSpawn = false
+GUI.Parent = CoreGui
 
 local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.fromOffset(430, 590)
-Main.Position = UDim2.new(0.5, -215, 0.5, -295)
-Main.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+Main.Size = UDim2.new(0, 440, 0, 600)
+Main.Position = UDim2.new(0.5, -220, 0.5, -300)
+Main.BackgroundColor3 = Color3.fromRGB(18,18,24)
 Main.BorderSizePixel = 0
-Main.Parent = ScreenGui
+Main.Parent = GUI
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
-MainCorner.Parent = Main
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
 
 local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(60, 60, 75)
-Stroke.Thickness = 1
+Stroke.Color = Color3.fromRGB(60,60,75)
 Stroke.Parent = Main
 
---==================================================
+--========================================================
 -- HEADER
---==================================================
+--========================================================
 
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 58)
-Header.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
+Header.Size = UDim2.new(1,0,0,55)
+Header.BackgroundColor3 = Color3.fromRGB(25,25,34)
 Header.BorderSizePixel = 0
 Header.Parent = Main
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 14)
-HeaderCorner.Parent = Header
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0,12)
 
 local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-100,0,28)
+Title.Position = UDim2.new(0,15,0,6)
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.fromOffset(18, 7)
-Title.Size = UDim2.new(1, -120, 0, 25)
-Title.Font = Enum.Font.GothamBold
 Title.Text = "PROJECT SLAYERS 2"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
 Title.TextSize = 18
-Title.TextColor3 = Color3.fromRGB(245, 245, 255)
+Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
 local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1,-100,0,18)
+Status.Position = UDim2.new(0,15,0,32)
 Status.BackgroundTransparency = 1
-Status.Position = UDim2.fromOffset(18, 32)
-Status.Size = UDim2.new(1, -120, 0, 18)
-Status.Font = Enum.Font.Gotham
-Status.Text = "NPCs not loaded"
+Status.Text = "Ready"
+Status.TextColor3 = Color3.fromRGB(150,150,165)
 Status.TextSize = 11
-Status.TextColor3 = Color3.fromRGB(150, 150, 165)
+Status.Font = Enum.Font.Gotham
 Status.TextXAlignment = Enum.TextXAlignment.Left
 Status.Parent = Header
 
-local Minimize = Instance.new("TextButton")
-Minimize.Size = UDim2.fromOffset(35, 35)
-Minimize.Position = UDim2.new(1, -82, 0, 12)
-Minimize.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
-Minimize.Text = "—"
-Minimize.TextColor3 = Color3.fromRGB(230, 230, 240)
-Minimize.TextSize = 20
-Minimize.Font = Enum.Font.GothamBold
-Minimize.AutoButtonColor = false
-Minimize.Parent = Header
-
-local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 8)
-MinCorner.Parent = Minimize
-
 local Close = Instance.new("TextButton")
-Close.Size = UDim2.fromOffset(35, 35)
-Close.Position = UDim2.new(1, -42, 0, 12)
-Close.BackgroundColor3 = Color3.fromRGB(55, 35, 40)
+Close.Size = UDim2.new(0,35,0,35)
+Close.Position = UDim2.new(1,-42,0,10)
+Close.BackgroundColor3 = Color3.fromRGB(150,45,55)
 Close.Text = "×"
-Close.TextColor3 = Color3.fromRGB(255, 180, 185)
-Close.TextSize = 21
+Close.TextColor3 = Color3.fromRGB(255,255,255)
+Close.TextSize = 20
 Close.Font = Enum.Font.GothamBold
-Close.AutoButtonColor = false
+Close.BorderSizePixel = 0
 Close.Parent = Header
 
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 8)
-CloseCorner.Parent = Close
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0,8)
 
---==================================================
--- LOAD BUTTON
---==================================================
+--========================================================
+-- LOAD
+--========================================================
 
-local LoadButton = Instance.new("TextButton")
-LoadButton.Name = "LoadNPC"
-LoadButton.Size = UDim2.new(1, -28, 0, 48)
-LoadButton.Position = UDim2.fromOffset(14, 72)
-LoadButton.BackgroundColor3 = Color3.fromRGB(55, 90, 150)
-LoadButton.Text = "LOAD NPC"
-LoadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-LoadButton.TextSize = 14
-LoadButton.Font = Enum.Font.GothamBold
-LoadButton.AutoButtonColor = false
-LoadButton.Parent = Main
+local Load = Instance.new("TextButton")
+Load.Size = UDim2.new(1,-30,0,42)
+Load.Position = UDim2.new(0,15,0,70)
+Load.BackgroundColor3 = Color3.fromRGB(75,95,180)
+Load.Text = "LOAD NPC"
+Load.TextColor3 = Color3.fromRGB(255,255,255)
+Load.TextSize = 14
+Load.Font = Enum.Font.GothamBold
+Load.BorderSizePixel = 0
+Load.Parent = Main
 
-local LoadCorner = Instance.new("UICorner")
-LoadCorner.CornerRadius = UDim.new(0, 10)
-LoadCorner.Parent = LoadButton
+Instance.new("UICorner", Load).CornerRadius = UDim.new(0,8)
 
---==================================================
+--========================================================
 -- SEARCH
---==================================================
+--========================================================
 
 local Search = Instance.new("TextBox")
-Search.Name = "Search"
-Search.Size = UDim2.new(1, -28, 0, 42)
-Search.Position = UDim2.fromOffset(14, 130)
-Search.BackgroundColor3 = Color3.fromRGB(28, 28, 37)
+Search.Size = UDim2.new(1,-30,0,38)
+Search.Position = UDim2.new(0,15,0,122)
+Search.BackgroundColor3 = Color3.fromRGB(30,30,40)
+Search.BorderSizePixel = 0
 Search.PlaceholderText = "Search NPC..."
-Search.PlaceholderColor3 = Color3.fromRGB(110, 110, 125)
+Search.PlaceholderColor3 = Color3.fromRGB(120,120,135)
 Search.Text = ""
-Search.TextColor3 = Color3.fromRGB(240, 240, 245)
+Search.TextColor3 = Color3.fromRGB(255,255,255)
 Search.TextSize = 13
 Search.Font = Enum.Font.Gotham
 Search.ClearTextOnFocus = false
 Search.Parent = Main
 
-local SearchCorner = Instance.new("UICorner")
-SearchCorner.CornerRadius = UDim.new(0, 9)
-SearchCorner.Parent = Search
+Instance.new("UICorner", Search).CornerRadius = UDim.new(0,8)
 
-local SearchPadding = Instance.new("UIPadding")
-SearchPadding.PaddingLeft = UDim.new(0, 13)
-SearchPadding.PaddingRight = UDim.new(0, 13)
-SearchPadding.Parent = Search
+local Pad = Instance.new("UIPadding")
+Pad.PaddingLeft = UDim.new(0,12)
+Pad.Parent = Search
 
---==================================================
+--========================================================
 -- TABS
---==================================================
+--========================================================
 
-local TabFrame = Instance.new("Frame")
-TabFrame.BackgroundTransparency = 1
-TabFrame.Size = UDim2.new(1, -28, 0, 38)
-TabFrame.Position = UDim2.fromOffset(14, 181)
-TabFrame.Parent = Main
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1,-30,0,38)
+Tabs.Position = UDim2.new(0,15,0,172)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Main
 
 local TabLayout = Instance.new("UIListLayout")
 TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-TabLayout.Padding = UDim.new(0, 6)
-TabLayout.Parent = TabFrame
+TabLayout.Padding = UDim.new(0,6)
+TabLayout.Parent = Tabs
 
-local Tabs = {}
+local function makeTab(text)
 
-local function createTab(name, text)
-    local Button = Instance.new("TextButton")
-    Button.Name = name
-    Button.Size = UDim2.new(0, 88, 1, 0)
-    Button.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
-    Button.Text = text
-    Button.TextColor3 = Color3.fromRGB(175, 175, 190)
-    Button.TextSize = 11
-    Button.Font = Enum.Font.GothamBold
-    Button.AutoButtonColor = false
-    Button.Parent = TabFrame
+    local b = Instance.new("TextButton")
 
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 8)
-    Corner.Parent = Button
+    b.Size = UDim2.new(0,95,1,0)
+    b.BackgroundColor3 = Color3.fromRGB(35,35,46)
+    b.Text = text
+    b.TextColor3 = Color3.fromRGB(200,200,215)
+    b.TextSize = 12
+    b.Font = Enum.Font.GothamBold
+    b.BorderSizePixel = 0
+    b.Parent = Tabs
 
-    Tabs[name] = Button
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,7)
 
-    return Button
+    return b
 end
 
-createTab("ALL", "ALL")
-createTab("MUZAN", "MUZAN")
-createTab("NPC", "NPC")
+local AllTab = makeTab("ALL")
+local MuzanTab = makeTab("MUZAN")
+local NpcTab = makeTab("NPC")
 
---==================================================
+--========================================================
 -- LIST
---==================================================
+--========================================================
 
 local List = Instance.new("ScrollingFrame")
-List.Name = "NPCList"
-List.Size = UDim2.new(1, -28, 1, -235)
-List.Position = UDim2.fromOffset(14, 225)
-List.BackgroundColor3 = Color3.fromRGB(23, 23, 31)
+List.Size = UDim2.new(1,-30,1,-270)
+List.Position = UDim2.new(0,15,0,220)
+List.BackgroundColor3 = Color3.fromRGB(22,22,30)
 List.BorderSizePixel = 0
 List.ScrollBarThickness = 5
-List.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 100)
-List.CanvasSize = UDim2.new()
 List.Parent = Main
 
-local ListCorner = Instance.new("UICorner")
-ListCorner.CornerRadius = UDim.new(0, 10)
-ListCorner.Parent = List
+Instance.new("UICorner", List).CornerRadius = UDim.new(0,8)
 
-local ListPadding = Instance.new("UIPadding")
-ListPadding.PaddingTop = UDim.new(0, 8)
-ListPadding.PaddingBottom = UDim.new(0, 8)
-ListPadding.PaddingLeft = UDim.new(0, 8)
-ListPadding.PaddingRight = UDim.new(0, 8)
-ListPadding.Parent = List
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0,6)
+Layout.SortOrder = Enum.SortOrder.Name
+Layout.Parent = List
 
-local ListLayout = Instance.new("UIListLayout")
-ListLayout.Padding = UDim.new(0, 6)
-ListLayout.Parent = List
+local ListPad = Instance.new("UIPadding")
+ListPad.PaddingTop = UDim.new(0,8)
+ListPad.PaddingBottom = UDim.new(0,8)
+ListPad.PaddingLeft = UDim.new(0,8)
+ListPad.PaddingRight = UDim.new(0,8)
+ListPad.Parent = List
 
-ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     List.CanvasSize = UDim2.new(
         0,
         0,
         0,
-        ListLayout.AbsoluteContentSize.Y + 16
+        Layout.AbsoluteContentSize.Y + 16
     )
 end)
 
---==================================================
--- TELEPORT
---==================================================
+--========================================================
+-- ROOT
+--========================================================
 
-local function teleportTo(target)
-    if not target then
-        return
+local function getRoot(model)
+
+    if not model then
+        return nil
     end
 
-    local character = LocalPlayer.Character
-    local characterRoot = getCharacterRoot(character)
+    local root = model:FindFirstChild("HumanoidRootPart")
 
-    if not characterRoot then
-        return
+    if root and root:IsA("BasePart") then
+        return root
     end
 
-    local model = target.Model
-
-    if not model or not model.Parent then
-        return
+    if model.PrimaryPart and model.PrimaryPart:IsA("BasePart") then
+        return model.PrimaryPart
     end
 
-    local targetRoot =
-        model:FindFirstChild("HumanoidRootPart")
-        or model.PrimaryPart
-
-    if not targetRoot then
-        return
-    end
-
-    characterRoot.CFrame =
-        targetRoot.CFrame + Vector3.new(0, 3, 0)
+    return nil
 end
 
---==================================================
--- RENDER
---==================================================
+--========================================================
+-- ADD NPC
+--========================================================
 
-local function clearList()
-    for _, child in ipairs(List:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
+local function addNPC(model, forceMuzan)
+
+    if not model or not model:IsA("Model") then
+        return
     end
+
+    if Seen[model] then
+        return
+    end
+
+    local root = getRoot(model)
+
+    if not root then
+        return
+    end
+
+    Seen[model] = true
+
+    table.insert(LoadedNPCs, {
+        Model = model,
+        Root = root,
+        Name = model.Name,
+        Path = model:GetFullName(),
+        IsMuzan = forceMuzan == true
+    })
 end
 
-local function matchesTarget(target)
-    if CurrentTab == "MUZAN" then
-        if target.Type ~= "NPC" then
-            return false
-        end
+--========================================================
+-- DIRECT MUZAN
+--========================================================
 
-        if not string.find(
-            string.lower(target.Name),
-            "muzan",
-            1,
-            true
-        ) then
-            return false
-        end
-    elseif CurrentTab == "NPC" then
-        if target.Type ~= "NPC" then
-            return false
-        end
+local function loadMuzan()
+
+    local Debree = workspace:FindFirstChild("Debree")
+
+    if not Debree then
+        return false
     end
 
-    local query = string.lower(Search.Text)
+    local Muzan = Debree:FindFirstChild("MuzanLairModel")
 
-    if query ~= "" then
-        return string.find(
-            string.lower(target.Name),
-            query,
-            1,
-            true
-        ) ~= nil
+    if not Muzan then
+        return false
     end
+
+    if not Muzan:IsA("Model") then
+        return false
+    end
+
+    local root = Muzan:FindFirstChild("HumanoidRootPart")
+
+    if not root then
+        return false
+    end
+
+    addNPC(Muzan, true)
 
     return true
 end
 
-local function render()
+--========================================================
+-- NPC CHECK
+--========================================================
+
+local function isNPC(model)
+
+    if not model:IsA("Model") then
+        return false
+    end
+
+    if not getRoot(model) then
+        return false
+    end
+
+    -- NPC thường
+    if model:FindFirstChildOfClass("Humanoid") then
+        return true
+    end
+
+    -- NPC/Boss dùng AnimationController
+    if model:FindFirstChildOfClass("AnimationController") then
+        return true
+    end
+
+    return false
+end
+
+--========================================================
+-- PLAYER CHARACTER CHECK
+--========================================================
+
+local function isPlayerCharacter(model)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+
+        if player.Character == model then
+            return true
+        end
+
+    end
+
+    return false
+end
+
+--========================================================
+-- LOAD ALL NPC
+--========================================================
+
+local function loadAllNPC()
+
+    LoadedNPCs = {}
+    Seen = {}
+
+    Loaded = false
+
+    Load.Text = "SCANNING..."
+    Status.Text = "Scanning toàn Workspace..."
+
+    task.wait()
+
+    --====================================================
+    -- 1. LOAD MUZAN TRƯỚC
+    --====================================================
+
+    local muzFound = loadMuzan()
+
+    --====================================================
+    -- 2. SCAN TOÀN WORKSPACE
+    --====================================================
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+
+        if obj:IsA("Model") then
+
+            if not Seen[obj]
+                and not isPlayerCharacter(obj)
+                and isNPC(obj)
+            then
+
+                addNPC(obj, false)
+
+            end
+
+        end
+
+    end
+
+    --====================================================
+    -- 3. SORT
+    --====================================================
+
+    table.sort(LoadedNPCs, function(a,b)
+
+        if a.IsMuzan ~= b.IsMuzan then
+            return a.IsMuzan
+        end
+
+        return string.lower(a.Name) < string.lower(b.Name)
+
+    end)
+
+    Loaded = true
+
+    Load.Text = "RELOAD NPC"
+
+    if muzFound then
+        Status.Text =
+            "Loaded "
+            .. #LoadedNPCs
+            .. " NPC | Muzan FOUND"
+    else
+        Status.Text =
+            "Loaded "
+            .. #LoadedNPCs
+            .. " NPC | Muzan NOT FOUND"
+    end
+
+    refreshList()
+end
+
+--========================================================
+-- CLEAR
+--========================================================
+
+local function clearList()
+
+    for _, child in ipairs(List:GetChildren()) do
+
+        if child:IsA("TextButton")
+            or child:IsA("Frame") then
+
+            child:Destroy()
+
+        end
+
+    end
+end
+
+--========================================================
+-- TELEPORT
+--========================================================
+
+local function teleport(target)
+
+    if not target then
+        return
+    end
+
+    local character = LP.Character
+
+    if not character then
+        return
+    end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if not root then
+        return
+    end
+
+    if not target.Model
+        or not target.Model.Parent then
+
+        Status.Text = "NPC không còn tồn tại"
+        return
+    end
+
+    local targetRoot = getRoot(target.Model)
+
+    if not targetRoot then
+        Status.Text = "Không có Root"
+        return
+    end
+
+    root.CFrame =
+        targetRoot.CFrame
+        + Vector3.new(0,3,0)
+
+    Status.Text =
+        "Teleport → "
+        .. target.Name
+end
+
+--========================================================
+-- CREATE BUTTON
+--========================================================
+
+local function createButton(target)
+
+    local Button = Instance.new("TextButton")
+
+    Button.Size = UDim2.new(1,-4,0,48)
+    Button.BackgroundColor3 = Color3.fromRGB(31,31,42)
+    Button.BorderSizePixel = 0
+    Button.Text = ""
+    Button.AutoButtonColor = false
+    Button.Parent = List
+
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0,7)
+
+    local Name = Instance.new("TextLabel")
+    Name.Size = UDim2.new(1,-100,0,22)
+    Name.Position = UDim2.new(0,10,0,4)
+    Name.BackgroundTransparency = 1
+    Name.Text =
+        target.IsMuzan
+        and "☠ MUZAN"
+        or target.Name
+    Name.TextColor3 = target.IsMuzan
+        and Color3.fromRGB(255,100,100)
+        or Color3.fromRGB(245,245,255)
+    Name.TextSize = 13
+    Name.Font = Enum.Font.GothamBold
+    Name.TextXAlignment = Enum.TextXAlignment.Left
+    Name.Parent = Button
+
+    local Path = Instance.new("TextLabel")
+    Path.Size = UDim2.new(1,-100,0,17)
+    Path.Position = UDim2.new(0,10,0,26)
+    Path.BackgroundTransparency = 1
+    Path.Text = target.Path
+    Path.TextColor3 = Color3.fromRGB(115,115,135)
+    Path.TextSize = 9
+    Path.Font = Enum.Font.Gotham
+    Path.TextXAlignment = Enum.TextXAlignment.Left
+    Path.TextTruncate = Enum.TextTruncate.AtEnd
+    Path.Parent = Button
+
+    local TP = Instance.new("TextButton")
+    TP.Size = UDim2.new(0,78,0,30)
+    TP.Position = UDim2.new(1,-86,0.5,-15)
+    TP.BackgroundColor3 = target.IsMuzan
+        and Color3.fromRGB(170,55,65)
+        or Color3.fromRGB(75,95,180)
+    TP.Text = "TELEPORT"
+    TP.TextColor3 = Color3.fromRGB(255,255,255)
+    TP.TextSize = 10
+    TP.Font = Enum.Font.GothamBold
+    TP.BorderSizePixel = 0
+    TP.Parent = Button
+
+    Instance.new("UICorner", TP).CornerRadius = UDim.new(0,6)
+
+    TP.MouseButton1Click:Connect(function()
+        teleport(target)
+    end)
+
+    Button.MouseEnter:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(43,43,56)
+    end)
+
+    Button.MouseLeave:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(31,31,42)
+    end)
+end
+
+--========================================================
+-- FILTER
+--========================================================
+
+function refreshList()
+
     clearList()
 
     if not Loaded then
         return
     end
 
+    local query = string.lower(Search.Text or "")
     local shown = 0
 
-    for _, target in ipairs(LoadedTargets) do
-        if matchesTarget(target) then
+    for _, target in ipairs(LoadedNPCs) do
+
+        local show = true
+
+        if CurrentTab == "MUZAN" then
+            show = target.IsMuzan
+
+        elseif CurrentTab == "NPC" then
+            show = not target.IsMuzan
+        end
+
+        if show and query ~= "" then
+
+            local name =
+                string.lower(target.Name)
+
+            local path =
+                string.lower(target.Path)
+
+            show =
+                string.find(
+                    name,
+                    query,
+                    1,
+                    true
+                ) ~= nil
+
+                or
+
+                string.find(
+                    path,
+                    query,
+                    1,
+                    true
+                ) ~= nil
+        end
+
+        if show then
+            createButton(target)
             shown += 1
-
-            local Item = Instance.new("Frame")
-            Item.Size = UDim2.new(1, 0, 0, 54)
-            Item.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-            Item.BorderSizePixel = 0
-            Item.Parent = List
-
-            local Corner = Instance.new("UICorner")
-            Corner.CornerRadius = UDim.new(0, 8)
-            Corner.Parent = Item
-
-            local Name = Instance.new("TextLabel")
-            Name.BackgroundTransparency = 1
-            Name.Position = UDim2.fromOffset(12, 5)
-            Name.Size = UDim2.new(1, -115, 0, 21)
-            Name.Font = Enum.Font.GothamBold
-            Name.Text = target.Name
-            Name.TextSize = 12
-            Name.TextColor3 = Color3.fromRGB(235, 235, 245)
-            Name.TextXAlignment = Enum.TextXAlignment.Left
-            Name.TextTruncate = Enum.TextTruncate.AtEnd
-            Name.Parent = Item
-
-            local Type = Instance.new("TextLabel")
-            Type.BackgroundTransparency = 1
-            Type.Position = UDim2.fromOffset(12, 28)
-            Type.Size = UDim2.new(1, -115, 0, 17)
-            Type.Font = Enum.Font.Gotham
-            Type.Text = target.Type
-            Type.TextSize = 10
-            Type.TextColor3 = Color3.fromRGB(125, 125, 145)
-            Type.TextXAlignment = Enum.TextXAlignment.Left
-            Type.Parent = Item
-
-            local Teleport = Instance.new("TextButton")
-            Teleport.Size = UDim2.fromOffset(86, 34)
-            Teleport.Position = UDim2.new(1, -94, 0.5, -17)
-            Teleport.BackgroundColor3 = Color3.fromRGB(55, 90, 150)
-            Teleport.Text = "TELEPORT"
-            Teleport.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Teleport.TextSize = 10
-            Teleport.Font = Enum.Font.GothamBold
-            Teleport.AutoButtonColor = false
-            Teleport.Parent = Item
-
-            local TeleportCorner = Instance.new("UICorner")
-            TeleportCorner.CornerRadius = UDim.new(0, 7)
-            TeleportCorner.Parent = Teleport
-
-            Teleport.Activated:Connect(function()
-                teleportTo(target)
-            end)
         end
     end
-
-    if shown == 0 then
-        local Empty = Instance.new("TextLabel")
-        Empty.Size = UDim2.new(1, -16, 0, 50)
-        Empty.BackgroundTransparency = 1
-        Empty.Text = "No NPC found"
-        Empty.TextColor3 = Color3.fromRGB(130, 130, 145)
-        Empty.TextSize = 13
-        Empty.Font = Enum.Font.Gotham
-        Empty.Parent = List
-    end
-end
-
---==================================================
--- LOAD ALL NPC
---==================================================
-
-local function loadAllNPCs()
-    LoadedTargets = {}
-
-    local playerCharacters = {}
-
-    -- Character của tất cả player
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character then
-            playerCharacters[player.Character] = true
-        end
-    end
-
-    -- QUÉT TOÀN BỘ WORKSPACE
-    for _, obj in ipairs(workspace:GetDescendants()) do
-
-        if obj:IsA("Model")
-            and not isPlayerCharacter(obj, playerCharacters)
-        then
-
-            local humanoid = obj:FindFirstChildOfClass("Humanoid")
-
-            if humanoid then
-                local root =
-                    obj:FindFirstChild("HumanoidRootPart")
-                    or obj.PrimaryPart
-
-                if root and root:IsA("BasePart") then
-
-                    table.insert(LoadedTargets, {
-                        Name = obj.Name,
-                        Model = obj,
-                        Root = root,
-                        Type = "NPC",
-                        Path = obj:GetFullName()
-                    })
-                end
-            end
-        end
-    end
-
-    Loaded = true
 
     Status.Text =
-        "Loaded " .. tostring(#LoadedTargets) .. " NPCs"
-
-    LoadButton.Text = "RELOAD NPC"
-
-    render()
-
-    print("================================")
-    print("NPC LOAD COMPLETE")
-    print("TOTAL NPC:", #LoadedTargets)
-    print("================================")
-
-    for _, npc in ipairs(LoadedTargets) do
-        print(
-            "[NPC]",
-            npc.Name,
-            "|",
-            npc.Path
-        )
-    end
+        "Loaded: "
+        .. #LoadedNPCs
+        .. " | Showing: "
+        .. shown
 end
 
---==================================================
--- BUTTON EVENTS
---==================================================
-
-LoadButton.Activated:Connect(function()
-    LoadButton.Text = "LOADING..."
-
-    task.wait()
-
-    loadAllNPCs()
-end)
+--========================================================
+-- SEARCH
+--========================================================
 
 Search:GetPropertyChangedSignal("Text"):Connect(function()
+
     if Loaded then
-        render()
+        refreshList()
     end
+
 end)
 
-for name, button in pairs(Tabs) do
-    button.Activated:Connect(function()
-        CurrentTab = name
+--========================================================
+-- TAB
+--========================================================
 
-        for tabName, tabButton in pairs(Tabs) do
-            if tabName == CurrentTab then
-                tabButton.BackgroundColor3 =
-                    Color3.fromRGB(55, 90, 150)
+local function selectTab(tab)
 
-                tabButton.TextColor3 =
-                    Color3.fromRGB(255, 255, 255)
-            else
-                tabButton.BackgroundColor3 =
-                    Color3.fromRGB(32, 32, 42)
+    CurrentTab = tab
 
-                tabButton.TextColor3 =
-                    Color3.fromRGB(175, 175, 190)
-            end
-        end
+    AllTab.BackgroundColor3 =
+        Color3.fromRGB(35,35,46)
 
-        render()
-    end)
+    MuzanTab.BackgroundColor3 =
+        Color3.fromRGB(35,35,46)
+
+    NpcTab.BackgroundColor3 =
+        Color3.fromRGB(35,35,46)
+
+    if tab == "ALL" then
+
+        AllTab.BackgroundColor3 =
+            Color3.fromRGB(75,95,180)
+
+    elseif tab == "MUZAN" then
+
+        MuzanTab.BackgroundColor3 =
+            Color3.fromRGB(170,55,65)
+
+    elseif tab == "NPC" then
+
+        NpcTab.BackgroundColor3 =
+            Color3.fromRGB(75,95,180)
+
+    end
+
+    refreshList()
 end
 
---==================================================
--- INITIAL TAB
---==================================================
-
-Tabs.ALL.BackgroundColor3 = Color3.fromRGB(55, 90, 150)
-Tabs.ALL.TextColor3 = Color3.fromRGB(255, 255, 255)
-
---==================================================
--- MINIMIZE
---==================================================
-
-local minimized = false
-
-Minimize.Activated:Connect(function()
-    minimized = not minimized
-
-    Search.Visible = not minimized
-    TabFrame.Visible = not minimized
-    List.Visible = not minimized
-    LoadButton.Visible = not minimized
-
-    if minimized then
-        Main.Size = UDim2.fromOffset(430, 58)
-        Minimize.Text = "+"
-    else
-        Main.Size = UDim2.fromOffset(430, 590)
-        Minimize.Text = "—"
-    end
+AllTab.MouseButton1Click:Connect(function()
+    selectTab("ALL")
 end)
 
---==================================================
+MuzanTab.MouseButton1Click:Connect(function()
+    selectTab("MUZAN")
+end)
+
+NpcTab.MouseButton1Click:Connect(function()
+    selectTab("NPC")
+end)
+
+--========================================================
+-- LOAD BUTTON
+--========================================================
+
+Load.MouseButton1Click:Connect(function()
+    task.spawn(loadAllNPC)
+end)
+
+--========================================================
 -- CLOSE
---==================================================
+--========================================================
 
-Close.Activated:Connect(function()
-    ScreenGui:Destroy()
+Close.MouseButton1Click:Connect(function()
+    GUI:Destroy()
 end)
 
---==================================================
+--========================================================
 -- DRAG
---==================================================
+--========================================================
 
 local dragging = false
 local dragStart
-local startPosition
+local startPos
 
 Header.InputBegan:Connect(function(input)
+
     if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch
-    then
+        or input.UserInputType == Enum.UserInputType.Touch then
+
         dragging = true
         dragStart = input.Position
-        startPosition = Main.Position
+        startPos = Main.Position
 
         input.Changed:Connect(function()
+
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
             end
+
         end)
     end
+
 end)
 
-UserInputService.InputChanged:Connect(function(input)
+UIS.InputChanged:Connect(function(input)
+
     if not dragging then
         return
     end
 
     if input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch
-    then
-        local delta = input.Position - dragStart
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        local delta =
+            input.Position - dragStart
 
         Main.Position = UDim2.new(
-            startPosition.X.Scale,
-            startPosition.X.Offset + delta.X,
-            startPosition.Y.Scale,
-            startPosition.Y.Offset + delta.Y
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
         )
+
     end
+
 end)
 
---==================================================
--- DONE
---==================================================
+--========================================================
+-- START
+--========================================================
 
-print("Project Slayers 2 Hub loaded.")
-print("Press LOAD NPC to scan the entire Workspace.")
+selectTab("ALL")
+
+Status.Text =
+    "Nhấn LOAD NPC để scan toàn map"
