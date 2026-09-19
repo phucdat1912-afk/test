@@ -1,7 +1,7 @@
 --==================================================
--- PROJECT SLAYERS 2 HUB
--- MANUAL LOAD ONLY
--- NPC + PLAYER + MUZAN
+-- PROJECT SLAYERS 2
+-- FULL NPC TELEPORT HUB
+-- LOAD NPC = SCAN ENTIRE WORKSPACE
 --==================================================
 
 local Players = game:GetService("Players")
@@ -15,9 +15,9 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 --==================================================
 
 for _, name in ipairs({
-    "TeleportUI",
+    "ProjectSlayers2Hub",
     "NPCTeleportUI",
-    "ProjectSlayers2Hub"
+    "TeleportUI"
 }) do
     local old = PlayerGui:FindFirstChild(name)
     if old then
@@ -26,473 +26,490 @@ for _, name in ipairs({
 end
 
 --==================================================
--- CONFIG
---==================================================
-
-local COLORS = {
-    Background = Color3.fromRGB(17, 17, 23),
-    Header = Color3.fromRGB(24, 24, 32),
-    Item = Color3.fromRGB(28, 28, 38),
-    ItemHover = Color3.fromRGB(37, 37, 49),
-    Button = Color3.fromRGB(55, 105, 220),
-    ButtonHover = Color3.fromRGB(70, 120, 235),
-    Text = Color3.fromRGB(240, 240, 245),
-    SubText = Color3.fromRGB(135, 135, 150),
-    Border = Color3.fromRGB(60, 60, 75),
-}
-
---==================================================
--- STATE
+-- DATA
 --==================================================
 
 local LoadedTargets = {}
 local Loaded = false
 local CurrentTab = "ALL"
-local SearchText = ""
 
 --==================================================
 -- HELPERS
 --==================================================
 
-local function corner(parent, radius)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius or 8)
-    c.Parent = parent
-    return c
-end
-
-local function stroke(parent, color, thickness, transparency)
-    local s = Instance.new("UIStroke")
-    s.Color = color or COLORS.Border
-    s.Thickness = thickness or 1
-    s.Transparency = transparency or 0
-    s.Parent = parent
-    return s
-end
-
-local function getRoot(model)
-    if not model then
+local function getCharacterRoot(character)
+    if not character then
         return nil
     end
 
-    return model:FindFirstChild("HumanoidRootPart")
-        or model.PrimaryPart
+    return character:FindFirstChild("HumanoidRootPart")
+        or character.PrimaryPart
 end
 
-local function isPlayerCharacter(model)
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character == model then
-            return true
-        end
-    end
-
-    return false
+local function isPlayerCharacter(model, playerCharacters)
+    return playerCharacters[model] == true
 end
 
 --==================================================
 -- GUI
 --==================================================
 
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "ProjectSlayers2Hub"
-Gui.ResetOnSpawn = false
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Gui.Parent = PlayerGui
-
---==================================================
--- MAIN
---==================================================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ProjectSlayers2Hub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = PlayerGui
 
 local Main = Instance.new("Frame")
 Main.Name = "Main"
-Main.Size = UDim2.fromOffset(410, 570)
-Main.Position = UDim2.new(0.5, -205, 0.5, -285)
-Main.BackgroundColor3 = COLORS.Background
+Main.Size = UDim2.fromOffset(430, 590)
+Main.Position = UDim2.new(0.5, -215, 0.5, -295)
+Main.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
 Main.BorderSizePixel = 0
-Main.Parent = Gui
+Main.Parent = ScreenGui
 
-corner(Main, 14)
-stroke(Main, COLORS.Border, 1, 0.2)
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = Main
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(60, 60, 75)
+Stroke.Thickness = 1
+Stroke.Parent = Main
 
 --==================================================
 -- HEADER
 --==================================================
 
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 70)
-Header.BackgroundColor3 = COLORS.Header
+Header.Size = UDim2.new(1, 0, 0, 58)
+Header.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
 Header.BorderSizePixel = 0
 Header.Parent = Main
 
-corner(Header, 14)
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 14)
+HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
-Title.Position = UDim2.fromOffset(18, 9)
-Title.Size = UDim2.new(1, -100, 0, 27)
 Title.BackgroundTransparency = 1
-Title.Text = "PROJECT SLAYERS 2"
-Title.TextColor3 = COLORS.Text
-Title.TextSize = 19
+Title.Position = UDim2.fromOffset(18, 7)
+Title.Size = UDim2.new(1, -120, 0, 25)
 Title.Font = Enum.Font.GothamBold
+Title.Text = "PROJECT SLAYERS 2"
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(245, 245, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Header
 
 local Status = Instance.new("TextLabel")
-Status.Position = UDim2.fromOffset(19, 38)
-Status.Size = UDim2.new(1, -110, 0, 18)
 Status.BackgroundTransparency = 1
-Status.Text = "Not loaded"
-Status.TextColor3 = COLORS.SubText
-Status.TextSize = 11
+Status.Position = UDim2.fromOffset(18, 32)
+Status.Size = UDim2.new(1, -120, 0, 18)
 Status.Font = Enum.Font.Gotham
+Status.Text = "NPCs not loaded"
+Status.TextSize = 11
+Status.TextColor3 = Color3.fromRGB(150, 150, 165)
 Status.TextXAlignment = Enum.TextXAlignment.Left
 Status.Parent = Header
 
---==================================================
--- MINIMIZE
---==================================================
-
 local Minimize = Instance.new("TextButton")
-Minimize.Position = UDim2.new(1, -75, 0, 15)
-Minimize.Size = UDim2.fromOffset(26, 26)
-Minimize.BackgroundColor3 = COLORS.Item
-Minimize.BorderSizePixel = 0
+Minimize.Size = UDim2.fromOffset(35, 35)
+Minimize.Position = UDim2.new(1, -82, 0, 12)
+Minimize.BackgroundColor3 = Color3.fromRGB(45, 45, 58)
 Minimize.Text = "—"
-Minimize.TextColor3 = COLORS.Text
-Minimize.TextSize = 15
+Minimize.TextColor3 = Color3.fromRGB(230, 230, 240)
+Minimize.TextSize = 20
 Minimize.Font = Enum.Font.GothamBold
+Minimize.AutoButtonColor = false
 Minimize.Parent = Header
 
-corner(Minimize, 7)
-
---==================================================
--- CLOSE
---==================================================
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 8)
+MinCorner.Parent = Minimize
 
 local Close = Instance.new("TextButton")
-Close.Position = UDim2.new(1, -42, 0, 15)
-Close.Size = UDim2.fromOffset(26, 26)
-Close.BackgroundColor3 = Color3.fromRGB(170, 55, 65)
-Close.BorderSizePixel = 0
+Close.Size = UDim2.fromOffset(35, 35)
+Close.Position = UDim2.new(1, -42, 0, 12)
+Close.BackgroundColor3 = Color3.fromRGB(55, 35, 40)
 Close.Text = "×"
-Close.TextColor3 = Color3.new(1, 1, 1)
-Close.TextSize = 17
+Close.TextColor3 = Color3.fromRGB(255, 180, 185)
+Close.TextSize = 21
 Close.Font = Enum.Font.GothamBold
+Close.AutoButtonColor = false
 Close.Parent = Header
 
-corner(Close, 7)
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = Close
 
 --==================================================
--- LOAD
+-- LOAD BUTTON
 --==================================================
 
 local LoadButton = Instance.new("TextButton")
-LoadButton.Position = UDim2.fromOffset(15, 82)
-LoadButton.Size = UDim2.new(1, -30, 0, 42)
-LoadButton.BackgroundColor3 = COLORS.Button
-LoadButton.BorderSizePixel = 0
-LoadButton.Text = "LOAD NPC + PLAYER"
-LoadButton.TextColor3 = Color3.new(1, 1, 1)
-LoadButton.TextSize = 13
+LoadButton.Name = "LoadNPC"
+LoadButton.Size = UDim2.new(1, -28, 0, 48)
+LoadButton.Position = UDim2.fromOffset(14, 72)
+LoadButton.BackgroundColor3 = Color3.fromRGB(55, 90, 150)
+LoadButton.Text = "LOAD NPC"
+LoadButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadButton.TextSize = 14
 LoadButton.Font = Enum.Font.GothamBold
+LoadButton.AutoButtonColor = false
 LoadButton.Parent = Main
 
-corner(LoadButton, 9)
+local LoadCorner = Instance.new("UICorner")
+LoadCorner.CornerRadius = UDim.new(0, 10)
+LoadCorner.Parent = LoadButton
 
 --==================================================
 -- SEARCH
 --==================================================
 
 local Search = Instance.new("TextBox")
-Search.Position = UDim2.fromOffset(15, 135)
-Search.Size = UDim2.new(1, -30, 0, 40)
-Search.BackgroundColor3 = COLORS.Item
-Search.BorderSizePixel = 0
-Search.PlaceholderText = "Search NPC / Player..."
-Search.PlaceholderColor3 = COLORS.SubText
+Search.Name = "Search"
+Search.Size = UDim2.new(1, -28, 0, 42)
+Search.Position = UDim2.fromOffset(14, 130)
+Search.BackgroundColor3 = Color3.fromRGB(28, 28, 37)
+Search.PlaceholderText = "Search NPC..."
+Search.PlaceholderColor3 = Color3.fromRGB(110, 110, 125)
 Search.Text = ""
-Search.TextColor3 = COLORS.Text
+Search.TextColor3 = Color3.fromRGB(240, 240, 245)
 Search.TextSize = 13
 Search.Font = Enum.Font.Gotham
 Search.ClearTextOnFocus = false
 Search.Parent = Main
 
-corner(Search, 9)
-stroke(Search, COLORS.Border, 1, 0.3)
+local SearchCorner = Instance.new("UICorner")
+SearchCorner.CornerRadius = UDim.new(0, 9)
+SearchCorner.Parent = Search
+
+local SearchPadding = Instance.new("UIPadding")
+SearchPadding.PaddingLeft = UDim.new(0, 13)
+SearchPadding.PaddingRight = UDim.new(0, 13)
+SearchPadding.Parent = Search
 
 --==================================================
 -- TABS
 --==================================================
 
 local TabFrame = Instance.new("Frame")
-TabFrame.Position = UDim2.fromOffset(15, 185)
-TabFrame.Size = UDim2.new(1, -30, 0, 36)
 TabFrame.BackgroundTransparency = 1
+TabFrame.Size = UDim2.new(1, -28, 0, 38)
+TabFrame.Position = UDim2.fromOffset(14, 181)
 TabFrame.Parent = Main
 
-local function createTab(text, x, width)
-    local button = Instance.new("TextButton")
-    button.Position = UDim2.fromOffset(x, 0)
-    button.Size = UDim2.fromOffset(width, 36)
-    button.BackgroundColor3 = COLORS.Item
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = COLORS.Text
-    button.TextSize = 11
-    button.Font = Enum.Font.GothamBold
-    button.Parent = TabFrame
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.FillDirection = Enum.FillDirection.Horizontal
+TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+TabLayout.Padding = UDim.new(0, 6)
+TabLayout.Parent = TabFrame
 
-    corner(button, 8)
+local Tabs = {}
 
-    return button
+local function createTab(name, text)
+    local Button = Instance.new("TextButton")
+    Button.Name = name
+    Button.Size = UDim2.new(0, 88, 1, 0)
+    Button.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
+    Button.Text = text
+    Button.TextColor3 = Color3.fromRGB(175, 175, 190)
+    Button.TextSize = 11
+    Button.Font = Enum.Font.GothamBold
+    Button.AutoButtonColor = false
+    Button.Parent = TabFrame
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 8)
+    Corner.Parent = Button
+
+    Tabs[name] = Button
+
+    return Button
 end
 
-local AllTab = createTab("ALL", 0, 65)
-local MuzanTab = createTab("MUZAN", 72, 80)
-local NPCTab = createTab("NPC", 159, 65)
-local PlayerTab = createTab("PLAYER", 231, 80)
+createTab("ALL", "ALL")
+createTab("MUZAN", "MUZAN")
+createTab("NPC", "NPC")
 
 --==================================================
 -- LIST
 --==================================================
 
 local List = Instance.new("ScrollingFrame")
-List.Position = UDim2.fromOffset(15, 232)
-List.Size = UDim2.new(1, -30, 1, -247)
-List.BackgroundTransparency = 1
+List.Name = "NPCList"
+List.Size = UDim2.new(1, -28, 1, -235)
+List.Position = UDim2.fromOffset(14, 225)
+List.BackgroundColor3 = Color3.fromRGB(23, 23, 31)
 List.BorderSizePixel = 0
-List.ScrollBarThickness = 4
-List.ScrollBarImageColor3 = Color3.fromRGB(90, 90, 105)
+List.ScrollBarThickness = 5
+List.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 100)
 List.CanvasSize = UDim2.new()
-List.AutomaticCanvasSize = Enum.AutomaticSize.Y
 List.Parent = Main
 
-local Layout = Instance.new("UIListLayout")
-Layout.Padding = UDim.new(0, 7)
-Layout.SortOrder = Enum.SortOrder.LayoutOrder
-Layout.Parent = List
+local ListCorner = Instance.new("UICorner")
+ListCorner.CornerRadius = UDim.new(0, 10)
+ListCorner.Parent = List
 
 local ListPadding = Instance.new("UIPadding")
-ListPadding.PaddingBottom = UDim.new(0, 5)
+ListPadding.PaddingTop = UDim.new(0, 8)
+ListPadding.PaddingBottom = UDim.new(0, 8)
+ListPadding.PaddingLeft = UDim.new(0, 8)
+ListPadding.PaddingRight = UDim.new(0, 8)
 ListPadding.Parent = List
+
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Padding = UDim.new(0, 6)
+ListLayout.Parent = List
+
+ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    List.CanvasSize = UDim2.new(
+        0,
+        0,
+        0,
+        ListLayout.AbsoluteContentSize.Y + 16
+    )
+end)
 
 --==================================================
 -- TELEPORT
 --==================================================
 
 local function teleportTo(target)
+    if not target then
+        return
+    end
+
     local character = LocalPlayer.Character
-    if not character then
+    local characterRoot = getCharacterRoot(character)
+
+    if not characterRoot then
         return
     end
 
-    local playerRoot = getRoot(character)
-    local targetRoot = getRoot(target)
+    local model = target.Model
 
-    if not playerRoot or not targetRoot then
+    if not model or not model.Parent then
         return
     end
 
-    playerRoot.CFrame =
+    local targetRoot =
+        model:FindFirstChild("HumanoidRootPart")
+        or model.PrimaryPart
+
+    if not targetRoot then
+        return
+    end
+
+    characterRoot.CFrame =
         targetRoot.CFrame + Vector3.new(0, 3, 0)
-end
-
---==================================================
--- CREATE TARGET BUTTON
---==================================================
-
-local function createTargetButton(data)
-    local target = data.Target
-
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, -8, 0, 52)
-    Button.BackgroundColor3 = COLORS.Item
-    Button.BorderSizePixel = 0
-    Button.Text = ""
-    Button.AutoButtonColor = false
-    Button.Parent = List
-
-    corner(Button, 9)
-
-    local Name = Instance.new("TextLabel")
-    Name.Position = UDim2.fromOffset(14, 5)
-    Name.Size = UDim2.new(1, -125, 0, 24)
-    Name.BackgroundTransparency = 1
-    Name.Text = target.Name
-    Name.TextColor3 = COLORS.Text
-    Name.TextSize = 14
-    Name.Font = Enum.Font.GothamMedium
-    Name.TextXAlignment = Enum.TextXAlignment.Left
-    Name.TextTruncate = Enum.TextTruncate.AtEnd
-    Name.Parent = Button
-
-    local Type = Instance.new("TextLabel")
-    Type.Position = UDim2.fromOffset(14, 29)
-    Type.Size = UDim2.new(1, -125, 0, 15)
-    Type.BackgroundTransparency = 1
-    Type.Text = data.Type
-    Type.TextColor3 = COLORS.SubText
-    Type.TextSize = 10
-    Type.Font = Enum.Font.Gotham
-    Type.TextXAlignment = Enum.TextXAlignment.Left
-    Type.Parent = Button
-
-    local TP = Instance.new("TextButton")
-    TP.AnchorPoint = Vector2.new(1, 0.5)
-    TP.Position = UDim2.new(1, -9, 0.5, 0)
-    TP.Size = UDim2.fromOffset(82, 30)
-    TP.BackgroundColor3 = COLORS.Button
-    TP.BorderSizePixel = 0
-    TP.Text = "TELEPORT"
-    TP.TextColor3 = Color3.new(1, 1, 1)
-    TP.TextSize = 10
-    TP.Font = Enum.Font.GothamBold
-    TP.Parent = Button
-
-    corner(TP, 7)
-
-    Button.MouseEnter:Connect(function()
-        Button.BackgroundColor3 = COLORS.ItemHover
-        TP.BackgroundColor3 = COLORS.ButtonHover
-    end)
-
-    Button.MouseLeave:Connect(function()
-        Button.BackgroundColor3 = COLORS.Item
-        TP.BackgroundColor3 = COLORS.Button
-    end)
-
-    Button.MouseButton1Click:Connect(function()
-        teleportTo(target)
-    end)
 end
 
 --==================================================
 -- RENDER
 --==================================================
 
+local function clearList()
+    for _, child in ipairs(List:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+end
+
+local function matchesTarget(target)
+    if CurrentTab == "MUZAN" then
+        if target.Type ~= "NPC" then
+            return false
+        end
+
+        if not string.find(
+            string.lower(target.Name),
+            "muzan",
+            1,
+            true
+        ) then
+            return false
+        end
+    elseif CurrentTab == "NPC" then
+        if target.Type ~= "NPC" then
+            return false
+        end
+    end
+
+    local query = string.lower(Search.Text)
+
+    if query ~= "" then
+        return string.find(
+            string.lower(target.Name),
+            query,
+            1,
+            true
+        ) ~= nil
+    end
+
+    return true
+end
+
 local function render()
+    clearList()
+
     if not Loaded then
         return
     end
 
-    for _, child in ipairs(List:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-
     local shown = 0
-    local searchText = Search.Text:lower()
 
-    for _, data in ipairs(LoadedTargets) do
-        local target = data.Target
+    for _, target in ipairs(LoadedTargets) do
+        if matchesTarget(target) then
+            shown += 1
 
-        if target
-            and target.Parent
-            and getRoot(target) then
+            local Item = Instance.new("Frame")
+            Item.Size = UDim2.new(1, 0, 0, 54)
+            Item.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+            Item.BorderSizePixel = 0
+            Item.Parent = List
 
-            local filterMatch = false
+            local Corner = Instance.new("UICorner")
+            Corner.CornerRadius = UDim.new(0, 8)
+            Corner.Parent = Item
 
-            if CurrentTab == "ALL" then
-                filterMatch = true
+            local Name = Instance.new("TextLabel")
+            Name.BackgroundTransparency = 1
+            Name.Position = UDim2.fromOffset(12, 5)
+            Name.Size = UDim2.new(1, -115, 0, 21)
+            Name.Font = Enum.Font.GothamBold
+            Name.Text = target.Name
+            Name.TextSize = 12
+            Name.TextColor3 = Color3.fromRGB(235, 235, 245)
+            Name.TextXAlignment = Enum.TextXAlignment.Left
+            Name.TextTruncate = Enum.TextTruncate.AtEnd
+            Name.Parent = Item
 
-            elseif CurrentTab == "NPC" then
-                filterMatch = data.Type == "NPC"
+            local Type = Instance.new("TextLabel")
+            Type.BackgroundTransparency = 1
+            Type.Position = UDim2.fromOffset(12, 28)
+            Type.Size = UDim2.new(1, -115, 0, 17)
+            Type.Font = Enum.Font.Gotham
+            Type.Text = target.Type
+            Type.TextSize = 10
+            Type.TextColor3 = Color3.fromRGB(125, 125, 145)
+            Type.TextXAlignment = Enum.TextXAlignment.Left
+            Type.Parent = Item
 
-            elseif CurrentTab == "PLAYER" then
-                filterMatch = data.Type == "PLAYER"
+            local Teleport = Instance.new("TextButton")
+            Teleport.Size = UDim2.fromOffset(86, 34)
+            Teleport.Position = UDim2.new(1, -94, 0.5, -17)
+            Teleport.BackgroundColor3 = Color3.fromRGB(55, 90, 150)
+            Teleport.Text = "TELEPORT"
+            Teleport.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Teleport.TextSize = 10
+            Teleport.Font = Enum.Font.GothamBold
+            Teleport.AutoButtonColor = false
+            Teleport.Parent = Item
 
-            elseif CurrentTab == "MUZAN" then
-                filterMatch =
-                    data.Type == "NPC"
-                    and target.Name:lower():find(
-                        "muzan",
-                        1,
-                        true
-                    ) ~= nil
-            end
+            local TeleportCorner = Instance.new("UICorner")
+            TeleportCorner.CornerRadius = UDim.new(0, 7)
+            TeleportCorner.Parent = Teleport
 
-            local searchMatch =
-                searchText == ""
-                or target.Name:lower():find(
-                    searchText,
-                    1,
-                    true
-                ) ~= nil
-
-            if filterMatch and searchMatch then
-                createTargetButton(data)
-                shown += 1
-            end
+            Teleport.Activated:Connect(function()
+                teleportTo(target)
+            end)
         end
     end
 
-    Status.Text =
-        string.format(
-            "%d loaded • %d shown",
-            #LoadedTargets,
-            shown
-        )
+    if shown == 0 then
+        local Empty = Instance.new("TextLabel")
+        Empty.Size = UDim2.new(1, -16, 0, 50)
+        Empty.BackgroundTransparency = 1
+        Empty.Text = "No NPC found"
+        Empty.TextColor3 = Color3.fromRGB(130, 130, 145)
+        Empty.TextSize = 13
+        Empty.Font = Enum.Font.Gotham
+        Empty.Parent = List
+    end
 end
 
 --==================================================
--- MANUAL LOAD
+-- LOAD ALL NPC
 --==================================================
 
-local function loadTargets()
+local function loadAllNPCs()
     LoadedTargets = {}
 
-    -- PLAYER
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer
-            and player.Character
-            and getRoot(player.Character) then
+    local playerCharacters = {}
 
-            table.insert(LoadedTargets, {
-                Target = player.Character,
-                Type = "PLAYER"
-            })
+    -- Character của tất cả player
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            playerCharacters[player.Character] = true
         end
     end
 
-    -- NPC
+    -- QUÉT TOÀN BỘ WORKSPACE
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model")
-            and obj ~= LocalPlayer.Character
-            and not isPlayerCharacter(obj)
-            and obj:FindFirstChildOfClass("Humanoid")
-            and getRoot(obj) then
 
-            table.insert(LoadedTargets, {
-                Target = obj,
-                Type = "NPC"
-            })
+        if obj:IsA("Model")
+            and not isPlayerCharacter(obj, playerCharacters)
+        then
+
+            local humanoid = obj:FindFirstChildOfClass("Humanoid")
+
+            if humanoid then
+                local root =
+                    obj:FindFirstChild("HumanoidRootPart")
+                    or obj.PrimaryPart
+
+                if root and root:IsA("BasePart") then
+
+                    table.insert(LoadedTargets, {
+                        Name = obj.Name,
+                        Model = obj,
+                        Root = root,
+                        Type = "NPC",
+                        Path = obj:GetFullName()
+                    })
+                end
+            end
         end
     end
 
     Loaded = true
+
+    Status.Text =
+        "Loaded " .. tostring(#LoadedTargets) .. " NPCs"
+
+    LoadButton.Text = "RELOAD NPC"
+
     render()
+
+    print("================================")
+    print("NPC LOAD COMPLETE")
+    print("TOTAL NPC:", #LoadedTargets)
+    print("================================")
+
+    for _, npc in ipairs(LoadedTargets) do
+        print(
+            "[NPC]",
+            npc.Name,
+            "|",
+            npc.Path
+        )
+    end
 end
 
 --==================================================
--- LOAD BUTTON
+-- BUTTON EVENTS
 --==================================================
 
-LoadButton.MouseButton1Click:Connect(function()
+LoadButton.Activated:Connect(function()
     LoadButton.Text = "LOADING..."
-    LoadButton.Active = false
 
     task.wait()
 
-    loadTargets()
-
-    LoadButton.Text = "RELOAD"
-    LoadButton.Active = true
+    loadAllNPCs()
 end)
-
---==================================================
--- SEARCH
---==================================================
 
 Search:GetPropertyChangedSignal("Text"):Connect(function()
     if Loaded then
@@ -500,68 +517,57 @@ Search:GetPropertyChangedSignal("Text"):Connect(function()
     end
 end)
 
---==================================================
--- TABS
---==================================================
+for name, button in pairs(Tabs) do
+    button.Activated:Connect(function()
+        CurrentTab = name
 
-local function setTab(tab)
-    CurrentTab = tab
+        for tabName, tabButton in pairs(Tabs) do
+            if tabName == CurrentTab then
+                tabButton.BackgroundColor3 =
+                    Color3.fromRGB(55, 90, 150)
 
-    AllTab.BackgroundColor3 =
-        tab == "ALL" and COLORS.Button or COLORS.Item
+                tabButton.TextColor3 =
+                    Color3.fromRGB(255, 255, 255)
+            else
+                tabButton.BackgroundColor3 =
+                    Color3.fromRGB(32, 32, 42)
 
-    MuzanTab.BackgroundColor3 =
-        tab == "MUZAN" and COLORS.Button or COLORS.Item
+                tabButton.TextColor3 =
+                    Color3.fromRGB(175, 175, 190)
+            end
+        end
 
-    NPCTab.BackgroundColor3 =
-        tab == "NPC" and COLORS.Button or COLORS.Item
-
-    PlayerTab.BackgroundColor3 =
-        tab == "PLAYER" and COLORS.Button or COLORS.Item
-
-    render()
+        render()
+    end)
 end
 
-AllTab.MouseButton1Click:Connect(function()
-    setTab("ALL")
-end)
+--==================================================
+-- INITIAL TAB
+--==================================================
 
-MuzanTab.MouseButton1Click:Connect(function()
-    setTab("MUZAN")
-end)
-
-NPCTab.MouseButton1Click:Connect(function()
-    setTab("NPC")
-end)
-
-PlayerTab.MouseButton1Click:Connect(function()
-    setTab("PLAYER")
-end)
-
-setTab("ALL")
+Tabs.ALL.BackgroundColor3 = Color3.fromRGB(55, 90, 150)
+Tabs.ALL.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 --==================================================
 -- MINIMIZE
 --==================================================
 
 local minimized = false
-local normalSize = Main.Size
 
-Minimize.MouseButton1Click:Connect(function()
+Minimize.Activated:Connect(function()
     minimized = not minimized
 
+    Search.Visible = not minimized
+    TabFrame.Visible = not minimized
+    List.Visible = not minimized
+    LoadButton.Visible = not minimized
+
     if minimized then
-        Main.Size = UDim2.fromOffset(410, 70)
-        Search.Visible = false
-        TabFrame.Visible = false
-        List.Visible = false
-        LoadButton.Visible = false
+        Main.Size = UDim2.fromOffset(430, 58)
+        Minimize.Text = "+"
     else
-        Main.Size = normalSize
-        Search.Visible = true
-        TabFrame.Visible = true
-        List.Visible = true
-        LoadButton.Visible = true
+        Main.Size = UDim2.fromOffset(430, 590)
+        Minimize.Text = "—"
     end
 end)
 
@@ -569,8 +575,8 @@ end)
 -- CLOSE
 --==================================================
 
-Close.MouseButton1Click:Connect(function()
-    Gui:Destroy()
+Close.Activated:Connect(function()
+    ScreenGui:Destroy()
 end)
 
 --==================================================
@@ -583,8 +589,8 @@ local startPosition
 
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+        or input.UserInputType == Enum.UserInputType.Touch
+    then
         dragging = true
         dragStart = input.Position
         startPosition = Main.Position
@@ -603,8 +609,8 @@ UserInputService.InputChanged:Connect(function(input)
     end
 
     if input.UserInputType == Enum.UserInputType.MouseMovement
-        or input.UserInputType == Enum.UserInputType.Touch then
-
+        or input.UserInputType == Enum.UserInputType.Touch
+    then
         local delta = input.Position - dragStart
 
         Main.Position = UDim2.new(
@@ -615,3 +621,10 @@ UserInputService.InputChanged:Connect(function(input)
         )
     end
 end)
+
+--==================================================
+-- DONE
+--==================================================
+
+print("Project Slayers 2 Hub loaded.")
+print("Press LOAD NPC to scan the entire Workspace.")
