@@ -1,11 +1,12 @@
 ```lua
 --==================================================
--- PROJECT SLAYERS 2
--- FULL MAP NPC + PLAYER TELEPORT HUB
+-- FULL MAP NPC + PLAYER + MUZAN
 --==================================================
 
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -23,28 +24,26 @@ local SearchText = ""
 --==================================================
 
 local Gui = Instance.new("ScreenGui")
-Gui.Name = "FullMapTeleportHub"
+Gui.Name = "FullMapHub"
 Gui.ResetOnSpawn = false
 Gui.Parent = CoreGui
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 520, 0, 600)
-Main.Position = UDim2.new(0.5, -260, 0.5, -300)
+Main.Size = UDim2.fromOffset(540, 620)
+Main.Position = UDim2.new(0.5, -270, 0.5, -310)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Main.BorderSizePixel = 0
 Main.Parent = Gui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
-Corner.Parent = Main
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
 --==================================================
 -- TITLE
 --==================================================
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -50, 0, 40)
-Title.Position = UDim2.new(0, 15, 0, 5)
+Title.Size = UDim2.new(1, -55, 0, 40)
+Title.Position = UDim2.fromOffset(15, 5)
 Title.BackgroundTransparency = 1
 Title.Text = "FULL MAP NPC + PLAYER"
 Title.TextColor3 = Color3.new(1, 1, 1)
@@ -54,7 +53,7 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
 local Close = Instance.new("TextButton")
-Close.Size = UDim2.new(0, 35, 0, 35)
+Close.Size = UDim2.fromOffset(35, 35)
 Close.Position = UDim2.new(1, -40, 0, 5)
 Close.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
 Close.Text = "X"
@@ -62,6 +61,8 @@ Close.TextColor3 = Color3.new(1, 1, 1)
 Close.TextSize = 16
 Close.Font = Enum.Font.GothamBold
 Close.Parent = Main
+
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 6)
 
 Close.MouseButton1Click:Connect(function()
     Gui:Destroy()
@@ -73,7 +74,7 @@ end)
 
 local LoadButton = Instance.new("TextButton")
 LoadButton.Size = UDim2.new(1, -30, 0, 42)
-LoadButton.Position = UDim2.new(0, 15, 0, 50)
+LoadButton.Position = UDim2.fromOffset(15, 50)
 LoadButton.BackgroundColor3 = Color3.fromRGB(45, 120, 220)
 LoadButton.Text = "LOAD NPC + PLAYER - FULL MAP"
 LoadButton.TextColor3 = Color3.new(1, 1, 1)
@@ -89,7 +90,7 @@ Instance.new("UICorner", LoadButton).CornerRadius = UDim.new(0, 7)
 
 local Search = Instance.new("TextBox")
 Search.Size = UDim2.new(1, -30, 0, 38)
-Search.Position = UDim2.new(0, 15, 0, 100)
+Search.Position = UDim2.fromOffset(15, 100)
 Search.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 Search.PlaceholderText = "Search loaded target..."
 Search.Text = ""
@@ -108,16 +109,15 @@ Instance.new("UICorner", Search).CornerRadius = UDim.new(0, 7)
 
 local TabFrame = Instance.new("Frame")
 TabFrame.Size = UDim2.new(1, -30, 0, 38)
-TabFrame.Position = UDim2.new(0, 15, 0, 145)
+TabFrame.Position = UDim2.fromOffset(15, 145)
 TabFrame.BackgroundTransparency = 1
 TabFrame.Parent = Main
 
-local Tabs = {}
-
 local function CreateTab(Name, X)
+
     local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(0, 115, 1, 0)
-    Button.Position = UDim2.new(0, X, 0, 0)
+    Button.Size = UDim2.fromOffset(120, 38)
+    Button.Position = UDim2.fromOffset(X, 0)
     Button.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
     Button.Text = Name
     Button.TextColor3 = Color3.new(1, 1, 1)
@@ -127,8 +127,6 @@ local function CreateTab(Name, X)
 
     Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
 
-    Tabs[Name] = Button
-
     Button.MouseButton1Click:Connect(function()
         CurrentTab = Name
         Refresh()
@@ -136,9 +134,9 @@ local function CreateTab(Name, X)
 end
 
 CreateTab("ALL", 0)
-CreateTab("NPC", 120)
-CreateTab("PLAYER", 240)
-CreateTab("MUZAN", 360)
+CreateTab("NPC", 125)
+CreateTab("PLAYER", 250)
+CreateTab("MUZAN", 375)
 
 --==================================================
 -- LIST
@@ -146,7 +144,7 @@ CreateTab("MUZAN", 360)
 
 local List = Instance.new("ScrollingFrame")
 List.Size = UDim2.new(1, -30, 1, -235)
-List.Position = UDim2.new(0, 15, 0, 190)
+List.Position = UDim2.fromOffset(15, 190)
 List.BackgroundColor3 = Color3.fromRGB(27, 27, 33)
 List.BorderSizePixel = 0
 List.ScrollBarThickness = 5
@@ -160,10 +158,11 @@ Layout.Padding = UDim.new(0, 5)
 Layout.Parent = List
 
 --==================================================
--- HELPERS
+-- ROOT
 --==================================================
 
 local function GetRoot(Model)
+
     if not Model then
         return nil
     end
@@ -174,14 +173,24 @@ local function GetRoot(Model)
         return Root
     end
 
-    if Model.PrimaryPart and Model.PrimaryPart:IsA("BasePart") then
+    if Model.PrimaryPart
+        and Model.PrimaryPart:IsA("BasePart")
+    then
         return Model.PrimaryPart
     end
 
-    return Model:FindFirstChildWhichIsA("BasePart", true)
+    return Model:FindFirstChildWhichIsA(
+        "BasePart",
+        true
+    )
 end
 
+--==================================================
+-- PLAYER CHECK
+--==================================================
+
 local function IsPlayerCharacter(Model)
+
     for _, Player in ipairs(Players:GetPlayers()) do
         if Player.Character == Model then
             return true
@@ -192,33 +201,53 @@ local function IsPlayerCharacter(Model)
 end
 
 --==================================================
--- PLAYER SCAN
+-- ADD PLAYER
+--==================================================
+
+local function AddPlayer(Player)
+
+    local Character = Player.Character
+
+    if not Character then
+        return false
+    end
+
+    local Root = GetRoot(Character)
+
+    if not Root then
+        return false
+    end
+
+    for _, Target in ipairs(Targets) do
+        if Target.Player == Player then
+            return false
+        end
+    end
+
+    table.insert(Targets, {
+        Name = Player.Name,
+        DisplayName = Player.DisplayName,
+        Type = "PLAYER",
+        Model = Character,
+        Root = Root,
+        Player = Player
+    })
+
+    return true
+end
+
+--==================================================
+-- SCAN ALL PLAYERS
 --==================================================
 
 local function ScanPlayers()
+
     local Count = 0
 
-    -- IMPORTANT:
-    -- GetPlayers() lấy TOÀN BỘ player trong server
-    -- Không scan theo khoảng cách.
-
     for _, Player in ipairs(Players:GetPlayers()) do
-        if Player.Character then
 
-            local Root = GetRoot(Player.Character)
-
-            if Root then
-                table.insert(Targets, {
-                    Name = Player.Name,
-                    DisplayName = Player.DisplayName,
-                    Type = "PLAYER",
-                    Model = Player.Character,
-                    Root = Root,
-                    Player = Player
-                })
-
-                Count += 1
-            end
+        if AddPlayer(Player) then
+            Count += 1
         end
     end
 
@@ -226,10 +255,11 @@ local function ScanPlayers()
 end
 
 --==================================================
--- NPC DETECTION
+-- NPC CHECK
 --==================================================
 
 local function IsNPC(Model)
+
     if not Model:IsA("Model") then
         return false
     end
@@ -254,7 +284,7 @@ local function IsNPC(Model)
         return true
     end
 
-    -- ProximityPrompt NPC
+    -- NPC có ProximityPrompt
     if Root:FindFirstChildOfClass("ProximityPrompt") then
         return true
     end
@@ -268,39 +298,65 @@ local function IsNPC(Model)
 end
 
 --==================================================
--- NPC SCAN
+-- ADD NPC
 --==================================================
 
-local function ScanNPCs()
+local function AddNPC(Model)
+
+    local Root = GetRoot(Model)
+
+    if not Root then
+        return false
+    end
+
+    for _, Target in ipairs(Targets) do
+
+        if Target.Model == Model then
+            return false
+        end
+    end
+
+    local Name = Model.Name
+    local Type = "NPC"
+
+    if Model.Name == "MuzanLairModel"
+        or Model:FindFirstChild("MuzanIsHere123", true)
+    then
+        Name = "Muzan"
+        Type = "MUZAN"
+    end
+
+    table.insert(Targets, {
+        Name = Name,
+        DisplayName = Name,
+        Type = Type,
+        Model = Model,
+        Root = Root
+    })
+
+    return true
+end
+
+--==================================================
+-- SCAN ENTIRE WORKSPACE
+--==================================================
+
+local function ScanWorkspace()
+
     local Count = 0
 
-    for _, Object in ipairs(workspace:GetDescendants()) do
+    -- QUÉT TOÀN BỘ WORKSPACE
+    -- KHÔNG CÓ DISTANCE / RADIUS
 
-        if Object:IsA("Model") and IsNPC(Object) then
+    for _, Object in ipairs(
+        Workspace:GetDescendants()
+    ) do
 
-            local Root = GetRoot(Object)
+        if Object:IsA("Model")
+            and IsNPC(Object)
+        then
 
-            if Root then
-
-                local Name = Object.Name
-
-                local Type = "NPC"
-
-                if Name == "MuzanLairModel"
-                    or Object:FindFirstChild("MuzanIsHere123", true)
-                then
-                    Type = "MUZAN"
-                    Name = "Muzan"
-                end
-
-                table.insert(Targets, {
-                    Name = Name,
-                    DisplayName = Name,
-                    Type = Type,
-                    Model = Object,
-                    Root = Root
-                })
-
+            if AddNPC(Object) then
                 Count += 1
             end
         end
@@ -310,122 +366,146 @@ local function ScanNPCs()
 end
 
 --==================================================
--- FORCE MUZAN
---==================================================
-
-local function ScanMuzan()
-    local Debree = workspace:FindFirstChild("Debree")
-
-    if not Debree then
-        return
-    end
-
-    local Muzan = Debree:FindFirstChild("MuzanLairModel")
-
-    if not Muzan or not Muzan:IsA("Model") then
-        return
-    end
-
-    local Root = GetRoot(Muzan)
-
-    if not Root then
-        return
-    end
-
-    -- tránh duplicate
-    for _, Target in ipairs(Targets) do
-        if Target.Model == Muzan then
-            return
-        end
-    end
-
-    table.insert(Targets, {
-        Name = "Muzan",
-        DisplayName = "Muzan",
-        Type = "MUZAN",
-        Model = Muzan,
-        Root = Root
-    })
-end
-
---==================================================
 -- REFRESH UI
 --==================================================
 
 local function Refresh()
+
     for _, Child in ipairs(List:GetChildren()) do
+
         if Child:IsA("TextButton") then
             Child:Destroy()
         end
     end
 
-    local SearchLower = string.lower(SearchText)
+    local SearchLower =
+        string.lower(SearchText)
+
     local Amount = 0
 
     for _, Target in ipairs(Targets) do
 
-        local PassTab =
-            CurrentTab == "ALL"
-            or CurrentTab == Target.Type
-            or (CurrentTab == "NPC" and Target.Type == "MUZAN")
+        if Target.Model
+            and Target.Model.Parent
+            and Target.Root
+            and Target.Root.Parent
+        then
 
-        local PassSearch =
-            SearchLower == ""
-            or string.find(string.lower(Target.Name), SearchLower, 1, true)
-            or string.find(string.lower(Target.DisplayName or ""), SearchLower, 1, true)
+            local TabOK =
+                CurrentTab == "ALL"
+                or CurrentTab == Target.Type
+                or (
+                    CurrentTab == "NPC"
+                    and Target.Type == "MUZAN"
+                )
 
-        if PassTab and PassSearch then
+            local NameLower =
+                string.lower(Target.Name or "")
 
-            local Button = Instance.new("TextButton")
+            local DisplayLower =
+                string.lower(Target.DisplayName or "")
 
-            Button.Size = UDim2.new(1, -10, 0, 42)
-            Button.BackgroundColor3 =
-                Target.Type == "PLAYER"
-                and Color3.fromRGB(45, 90, 145)
-                or Target.Type == "MUZAN"
-                and Color3.fromRGB(145, 70, 70)
-                or Color3.fromRGB(55, 55, 65)
+            local SearchOK =
+                SearchLower == ""
+                or string.find(
+                    NameLower,
+                    SearchLower,
+                    1,
+                    true
+                )
+                or string.find(
+                    DisplayLower,
+                    SearchLower,
+                    1,
+                    true
+                )
 
-            Button.Text = Target.Type .. "  |  " .. Target.Name
-            Button.TextColor3 = Color3.new(1, 1, 1)
-            Button.TextSize = 13
-            Button.Font = Enum.Font.GothamBold
-            Button.Parent = List
+            if TabOK and SearchOK then
 
-            Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
+                local Button =
+                    Instance.new("TextButton")
 
-            Button.MouseButton1Click:Connect(function()
+                Button.Size =
+                    UDim2.new(1, -10, 0, 42)
 
-                local Character = LocalPlayer.Character
+                if Target.Type == "PLAYER" then
 
-                if not Character then
-                    return
+                    Button.BackgroundColor3 =
+                        Color3.fromRGB(45, 90, 145)
+
+                elseif Target.Type == "MUZAN" then
+
+                    Button.BackgroundColor3 =
+                        Color3.fromRGB(145, 70, 70)
+
+                else
+
+                    Button.BackgroundColor3 =
+                        Color3.fromRGB(55, 55, 65)
                 end
 
-                local MyRoot = Character:FindFirstChild("HumanoidRootPart")
+                Button.Text =
+                    Target.Type
+                    .. " | "
+                    .. Target.Name
 
-                if not MyRoot then
-                    return
-                end
+                Button.TextColor3 =
+                    Color3.new(1, 1, 1)
 
-                local TargetRoot = Target.Root
+                Button.TextSize = 13
+                Button.Font = Enum.Font.GothamBold
+                Button.Parent = List
 
-                if TargetRoot and TargetRoot.Parent then
-                    MyRoot.CFrame =
-                        TargetRoot.CFrame
-                        * CFrame.new(0, 3, 0)
-                end
-            end)
+                Instance.new("UICorner", Button)
+                    .CornerRadius =
+                    UDim.new(0, 6)
 
-            Amount += 1
+                Button.MouseButton1Click:Connect(
+                    function()
+
+                        local Character =
+                            LocalPlayer.Character
+
+                        if not Character then
+                            return
+                        end
+
+                        local MyRoot =
+                            Character:FindFirstChild(
+                                "HumanoidRootPart"
+                            )
+
+                        if not MyRoot then
+                            return
+                        end
+
+                        if Target.Root
+                            and Target.Root.Parent
+                        then
+
+                            MyRoot.CFrame =
+                                Target.Root.CFrame
+                                * CFrame.new(0, 3, 0)
+                        end
+                    end
+                )
+
+                Amount += 1
+            end
         end
     end
 
-    List.CanvasSize = UDim2.new(0, 0, 0, Amount * 47)
+    List.CanvasSize =
+        UDim2.new(
+            0,
+            0,
+            0,
+            Amount * 47
+        )
 end
 
 --==================================================
--- FULL MAP LOAD
+-- LOAD
 --==================================================
 
 local function LoadFullMap()
@@ -437,126 +517,172 @@ local function LoadFullMap()
     Loaded = true
     Targets = {}
 
-    LoadButton.Text = "SCANNING FULL MAP..."
+    LoadButton.Text =
+        "SCANNING FULL MAP..."
 
-    -- Player: toàn bộ server
-    local PlayerCount = ScanPlayers()
+    -- PLAYER TOÀN SERVER
+    local PlayerCount =
+        ScanPlayers()
 
-    -- NPC: toàn bộ Workspace hiện client có
-    local NPCCount = ScanNPCs()
-
-    -- Muzan: path đặc biệt
-    ScanMuzan()
+    -- NPC TOÀN WORKSPACE
+    local NPCCount =
+        ScanWorkspace()
 
     LoadButton.Text =
-        "LOADED  |  PLAYER: "
+        "LOADED | PLAYER: "
         .. tostring(PlayerCount)
-        .. "  NPC: "
+        .. " | NPC: "
         .. tostring(NPCCount)
 
     Refresh()
 end
 
---==================================================
--- SEARCH = FILTER ONLY
---==================================================
-
-Search:GetPropertyChangedSignal("Text"):Connect(function()
-
-    SearchText = Search.Text
-
-    -- KHÔNG scan lại
-    Refresh()
-end)
+LoadButton.MouseButton1Click:Connect(
+    LoadFullMap
+)
 
 --==================================================
--- LOAD
+-- SEARCH
 --==================================================
 
-LoadButton.MouseButton1Click:Connect(function()
-    LoadFullMap()
-end)
+Search:GetPropertyChangedSignal("Text")
+    :Connect(function()
+
+        SearchText = Search.Text
+
+        -- SEARCH CHỈ FILTER
+        -- KHÔNG SCAN LẠI
+        Refresh()
+    end)
 
 --==================================================
--- PLAYER JOIN/LEAVE
+-- DYNAMIC MUZAN
 --==================================================
 
--- Không tự scan lại khi search.
--- Nếu player mới vào sau khi Load thì chỉ cập nhật
--- khi người dùng bấm LOAD lại bằng cách reset Loaded.
+local function WatchDebree(Debree)
 
-Players.PlayerAdded:Connect(function()
-    if Loaded then
-        -- Không tự rescan để giữ đúng yêu cầu
-        -- "search chỉ filter danh sách đã load".
-    end
-end)
+    Debree.ChildAdded:Connect(
+        function(Object)
 
-Players.PlayerRemoving:Connect(function(Player)
+            if Object.Name
+                ~= "MuzanLairModel"
+            then
+                return
+            end
 
-    for i = #Targets, 1, -1 do
+            task.wait(0.2)
 
-        local Target = Targets[i]
+            if not Loaded then
+                return
+            end
 
-        if Target.Player == Player then
-            table.remove(Targets, i)
+            if Object:IsA("Model") then
+
+                if AddNPC(Object) then
+                    Refresh()
+                end
+            end
+        end
+    )
+end
+
+local Debree =
+    Workspace:FindFirstChild("Debree")
+
+if Debree then
+    WatchDebree(Debree)
+end
+
+Workspace.ChildAdded:Connect(
+    function(Object)
+
+        if Object.Name == "Debree" then
+            WatchDebree(Object)
         end
     end
+)
 
-    if Loaded then
-        Refresh()
+--==================================================
+-- PLAYER REMOVED
+--==================================================
+
+Players.PlayerRemoving:Connect(
+    function(Player)
+
+        for i = #Targets, 1, -1 do
+
+            if Targets[i].Player == Player then
+                table.remove(Targets, i)
+            end
+        end
+
+        if Loaded then
+            Refresh()
+        end
     end
-end)
+)
 
 --==================================================
 -- DRAG
 --==================================================
 
-local UserInputService = game:GetService("UserInputService")
-
 local Dragging = false
 local DragStart
 local StartPosition
 
-Title.InputBegan:Connect(function(Input)
+Title.InputBegan:Connect(
+    function(Input)
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch
-    then
+        if Input.UserInputType
+            == Enum.UserInputType.MouseButton1
+            or Input.UserInputType
+            == Enum.UserInputType.Touch
+        then
 
-        Dragging = true
-        DragStart = Input.Position
-        StartPosition = Main.Position
+            Dragging = true
+            DragStart = Input.Position
+            StartPosition = Main.Position
 
-        Input.Changed:Connect(function()
+            Input.Changed:Connect(
+                function()
 
-            if Input.UserInputState == Enum.UserInputState.End then
-                Dragging = false
-            end
-        end)
+                    if Input.UserInputState
+                        == Enum.UserInputState.End
+                    then
+                        Dragging = false
+                    end
+                end
+            )
+        end
     end
-end)
+)
 
-UserInputService.InputChanged:Connect(function(Input)
+UserInputService.InputChanged:Connect(
+    function(Input)
 
-    if not Dragging then
-        return
+        if not Dragging then
+            return
+        end
+
+        if Input.UserInputType
+            == Enum.UserInputType.MouseMovement
+            or Input.UserInputType
+            == Enum.UserInputType.Touch
+        then
+
+            local Delta =
+                Input.Position - DragStart
+
+            Main.Position =
+                UDim2.new(
+                    StartPosition.X.Scale,
+                    StartPosition.X.Offset + Delta.X,
+                    StartPosition.Y.Scale,
+                    StartPosition.Y.Offset + Delta.Y
+                )
+        end
     end
-
-    if Input.UserInputType == Enum.UserInputType.MouseMovement
-        or Input.UserInputType == Enum.UserInputType.Touch
-    then
-
-        local Delta = Input.Position - DragStart
-
-        Main.Position = UDim2.new(
-            StartPosition.X.Scale,
-            StartPosition.X.Offset + Delta.X,
-            StartPosition.Y.Scale,
-            StartPosition.Y.Offset + Delta.Y
-        )
-    end
-end)
+)
 
 --==================================================
 -- READY
