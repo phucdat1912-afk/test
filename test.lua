@@ -1,6 +1,7 @@
 --==================================================
 -- NPC + PLAYER HUB
--- FULL MAP SCANNER
+-- FULL WORKSPACE SCAN
+-- PLAYER TELEPORT FIX
 --==================================================
 
 local Players = game:GetService("Players")
@@ -131,13 +132,11 @@ local function MakeTab(Text, X)
 
     Button.Size = UDim2.new(0.333, -4, 1, 0)
     Button.Position = UDim2.new(X, 0, 0, 0)
-
     Button.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     Button.Text = Text
     Button.TextColor3 = Color3.new(1, 1, 1)
     Button.TextSize = 13
     Button.Font = Enum.Font.GothamBold
-
     Button.Parent = Tabs
 
     Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
@@ -156,18 +155,13 @@ local PlayerTab = MakeTab("PLAYER", 0.666)
 local Search = Instance.new("TextBox")
 Search.Size = UDim2.new(1, -30, 0, 38)
 Search.Position = UDim2.fromOffset(15, 195)
-
 Search.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
-
 Search.PlaceholderText = "Search loaded NPC / Player..."
 Search.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-
 Search.Text = ""
 Search.TextColor3 = Color3.new(1, 1, 1)
-
 Search.TextSize = 13
 Search.Font = Enum.Font.Gotham
-
 Search.ClearTextOnFocus = false
 Search.Parent = Main
 
@@ -180,24 +174,21 @@ Instance.new("UICorner", Search).CornerRadius = UDim.new(0, 7)
 local List = Instance.new("ScrollingFrame")
 List.Size = UDim2.new(1, -30, 1, -250)
 List.Position = UDim2.fromOffset(15, 242)
-
 List.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
 List.BorderSizePixel = 0
-
 List.ScrollBarThickness = 5
 List.CanvasSize = UDim2.new()
-
 List.Parent = Main
 
 Instance.new("UICorner", List).CornerRadius = UDim.new(0, 7)
 
 local Layout = Instance.new("UIListLayout")
 Layout.Padding = UDim.new(0, 5)
-Layout.SortOrder = Enum.SortOrder.Name
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 Layout.Parent = List
 
 --==================================================
--- ROOT FINDER
+-- GET ROOT
 --==================================================
 
 local function GetRoot(Object)
@@ -212,14 +203,14 @@ local function GetRoot(Object)
 
     if Object:IsA("Model") then
 
-        if Object.PrimaryPart then
-            return Object.PrimaryPart
-        end
-
         local HRP = Object:FindFirstChild("HumanoidRootPart", true)
 
         if HRP and HRP:IsA("BasePart") then
             return HRP
+        end
+
+        if Object.PrimaryPart then
+            return Object.PrimaryPart
         end
     end
 
@@ -227,7 +218,7 @@ local function GetRoot(Object)
 end
 
 --==================================================
--- SCAN ALL NPC IN WHOLE WORKSPACE
+-- SCAN NPC - WHOLE WORKSPACE
 --==================================================
 
 local function ScanNPC()
@@ -244,18 +235,15 @@ local function ScanNPC()
 
             if Humanoid then
 
+                -- Không lấy Player Character
                 local Player = Players:GetPlayerFromCharacter(Object)
 
-                -- Không lấy Player Character
-                if not Player then
+                if not Player and not Found[Object] then
 
-                    -- Có root mới thêm vào danh sách
                     local Root = GetRoot(Object)
 
-                    if Root and not Found[Object] then
-
+                    if Root then
                         Found[Object] = true
-
                         table.insert(NPCs, Object)
                     end
                 end
@@ -265,7 +253,7 @@ local function ScanNPC()
 end
 
 --==================================================
--- SCAN ALL PLAYERS
+-- SCAN PLAYER
 --==================================================
 
 local function ScanPlayers()
@@ -322,41 +310,29 @@ local function AddESP(Object, Text)
     RemoveESP(Object)
 
     local Highlight = Instance.new("Highlight")
-
     Highlight.Name = "HubESP"
     Highlight.Adornee = Object
-
     Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     Highlight.FillTransparency = 0.75
     Highlight.OutlineTransparency = 0
-
     Highlight.Parent = Object
 
     local Billboard = Instance.new("BillboardGui")
-
     Billboard.Name = "HubName"
     Billboard.Adornee = Root
-
     Billboard.Size = UDim2.fromOffset(220, 35)
     Billboard.StudsOffset = Vector3.new(0, 3, 0)
-
     Billboard.AlwaysOnTop = true
-
     Billboard.Parent = Object
 
     local Label = Instance.new("TextLabel")
-
     Label.Size = UDim2.fromScale(1, 1)
     Label.BackgroundTransparency = 1
-
     Label.Text = Text
     Label.TextColor3 = Color3.new(1, 1, 1)
-
     Label.TextStrokeTransparency = 0
-
     Label.TextSize = 14
     Label.Font = Enum.Font.GothamBold
-
     Label.Parent = Billboard
 
     ESPObjects[Object] = {
@@ -391,7 +367,9 @@ local function UpdateESP()
 
     for _, Player in ipairs(PlayerData) do
 
-        if Player and Player.Character then
+        if Player
+            and Player.Parent
+            and Player.Character then
 
             AddESP(
                 Player.Character,
@@ -402,41 +380,64 @@ local function UpdateESP()
 end
 
 --==================================================
--- TELEPORT
+-- PLAYER / NPC TELEPORT
 --==================================================
 
 local function TeleportTo(Object)
 
-    local Character = LP.Character
+    local MyCharacter = LP.Character
 
-    if not Character then
+    if not MyCharacter then
         return
     end
 
-    local Target
+    local TargetCharacter = nil
 
-    if typeof(Object) == "Instance" then
+    -- PLAYER
+    if typeof(Object) == "Instance"
+        and Object:IsA("Player") then
 
-        if Object:IsA("Model") then
-            Target = Object
-        end
+        TargetCharacter = Object.Character
 
-    elseif typeof(Object) == "table" then
+    -- NPC
+    elseif typeof(Object) == "Instance"
+        and Object:IsA("Model") then
 
-        Target = Object.Character
+        TargetCharacter = Object
+
     end
 
-    if not Target then
+    -- Table fallback
+    if typeof(Object) == "table" then
+        TargetCharacter = Object.Character
+    end
+
+    if not TargetCharacter then
+        warn("[HUB] Target character not found")
         return
     end
 
-    local TargetRoot = GetRoot(Target)
+    local TargetRoot =
+        TargetCharacter:FindFirstChild("HumanoidRootPart")
 
     if not TargetRoot then
+        TargetRoot = GetRoot(TargetCharacter)
+    end
+
+    if not TargetRoot then
+        warn("[HUB] Target root not found")
         return
     end
 
-    Character:PivotTo(
+    local MyRoot =
+        MyCharacter:FindFirstChild("HumanoidRootPart")
+
+    if not MyRoot then
+        return
+    end
+
+    -- Teleport above target
+    MyCharacter:PivotTo(
         TargetRoot.CFrame * CFrame.new(0, 3, 0)
     )
 end
@@ -456,7 +457,7 @@ local function ClearList()
 end
 
 --==================================================
--- ADD LIST ENTRY
+-- ADD ENTRY
 --==================================================
 
 local function AddEntry(Name, Object, Type)
@@ -464,10 +465,8 @@ local function AddEntry(Name, Object, Type)
     local Row = Instance.new("Frame")
 
     Row.Size = UDim2.new(1, -10, 0, 42)
-
     Row.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
     Row.BorderSizePixel = 0
-
     Row.Parent = List
 
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 6)
@@ -476,14 +475,11 @@ local function AddEntry(Name, Object, Type)
 
     Label.Size = UDim2.new(1, -95, 1, 0)
     Label.Position = UDim2.fromOffset(10, 0)
-
     Label.BackgroundTransparency = 1
 
     Label.Text = Type .. ": " .. Name
-
     Label.TextColor3 = Color3.new(1, 1, 1)
     Label.TextSize = 12
-
     Label.Font = Enum.Font.Gotham
 
     Label.TextXAlignment = Enum.TextXAlignment.Left
@@ -499,9 +495,7 @@ local function AddEntry(Name, Object, Type)
     TP.BackgroundColor3 = Color3.fromRGB(55, 120, 210)
 
     TP.Text = "TELEPORT"
-
     TP.TextColor3 = Color3.new(1, 1, 1)
-
     TP.TextSize = 10
     TP.Font = Enum.Font.GothamBold
 
@@ -510,7 +504,9 @@ local function AddEntry(Name, Object, Type)
     Instance.new("UICorner", TP).CornerRadius = UDim.new(0, 5)
 
     TP.Activated:Connect(function()
+
         TeleportTo(Object)
+
     end)
 end
 
@@ -524,6 +520,7 @@ local function Refresh()
 
     local Query = string.lower(Search.Text)
 
+    -- NPC
     if CurrentTab == "ALL"
         or CurrentTab == "NPC" then
 
@@ -549,6 +546,7 @@ local function Refresh()
         end
     end
 
+    -- PLAYER
     if CurrentTab == "ALL"
         or CurrentTab == "PLAYER" then
 
@@ -639,23 +637,17 @@ end)
 --==================================================
 
 AllTab.Activated:Connect(function()
-
     CurrentTab = "ALL"
-
     Refresh()
 end)
 
 NPCTab.Activated:Connect(function()
-
     CurrentTab = "NPC"
-
     Refresh()
 end)
 
 PlayerTab.Activated:Connect(function()
-
     CurrentTab = "PLAYER"
-
     Refresh()
 end)
 
@@ -668,7 +660,7 @@ Search:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 --==================================================
--- CLOSE SCRIPT
+-- CLOSE
 --==================================================
 
 Close.Activated:Connect(function()
@@ -733,8 +725,4 @@ UIS.InputChanged:Connect(function(Input)
     )
 end)
 
-print("================================")
-print(" NPC + PLAYER HUB")
-print(" FULL MAP SCANNER")
-print(" NPC SOURCE: WORKSPACE")
-print("================================")
+print("[NPC + PLAYER HUB] FULL MAP LOADED")
