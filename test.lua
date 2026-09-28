@@ -1,162 +1,235 @@
---// AUTO COLLECT UI
---// Simple UI + Auto Collect
+--// AUTO TELEPORT COLLECT
+--// Teleport -> Collect -> Next Item
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Root = Character:WaitForChild("HumanoidRootPart")
 
-local CollectRemote = ReplicatedStorage:WaitForChild("Remotes")
+local Remote = ReplicatedStorage
+    :WaitForChild("Remotes")
     :WaitForChild("CollectCollectableObject")
 
-local Folder = workspace:WaitForChild("Systems")
+local Folder = workspace
+    :WaitForChild("Systems")
     :WaitForChild("CollectableObjects")
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local Enabled = false
+local TeleportHeight = 3
+local CollectDelay = 0.15
+local ScanDelay = 0.2
 
 --==================================================
 -- UI
 --==================================================
 
 local Gui = Instance.new("ScreenGui")
-Gui.Name = "AutoCollectUI"
+Gui.Name = "AutoTeleportCollect"
 Gui.ResetOnSpawn = false
-Gui.Parent = PlayerGui
+Gui.Parent = Player:WaitForChild("PlayerGui")
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 280, 0, 180)
-Main.Position = UDim2.new(0.5, -140, 0.5, -90)
+Main.Size = UDim2.new(0, 300, 0, 190)
+Main.Position = UDim2.new(0.5, -150, 0.5, -95)
 Main.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 Main.BorderSizePixel = 0
 Main.Parent = Gui
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = Main
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(70, 70, 80)
-Stroke.Thickness = 1
-Stroke.Parent = Main
-
--- Title
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -20, 0, 35)
-Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundTransparency = 1
-Title.Text = "🧲 AUTO COLLECT"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 20
+Title.Text = "⚡ AUTO TELEPORT COLLECT"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.TextSize = 18
 Title.Font = Enum.Font.GothamBold
 Title.Parent = Main
 
--- Status
 local Status = Instance.new("TextLabel")
-Status.Size = UDim2.new(1, -20, 0, 25)
 Status.Position = UDim2.new(0, 10, 0, 42)
+Status.Size = UDim2.new(1, -20, 0, 25)
 Status.BackgroundTransparency = 1
 Status.Text = "● OFF"
 Status.TextColor3 = Color3.fromRGB(255, 80, 80)
 Status.TextSize = 15
-Status.Font = Enum.Font.GothamSemibold
+Status.Font = Enum.Font.GothamBold
 Status.Parent = Main
 
--- Item count
+local Target = Instance.new("TextLabel")
+Target.Position = UDim2.new(0, 10, 0, 70)
+Target.Size = UDim2.new(1, -20, 0, 25)
+Target.BackgroundTransparency = 1
+Target.Text = "Target: None"
+Target.TextColor3 = Color3.fromRGB(200, 200, 200)
+Target.TextSize = 14
+Target.Font = Enum.Font.Gotham
+Target.Parent = Main
+
 local Count = Instance.new("TextLabel")
+Count.Position = UDim2.new(0, 10, 0, 94)
 Count.Size = UDim2.new(1, -20, 0, 25)
-Count.Position = UDim2.new(0, 10, 0, 68)
 Count.BackgroundTransparency = 1
-Count.Text = "Items found: 0"
+Count.Text = "Items: 0"
 Count.TextColor3 = Color3.fromRGB(200, 200, 200)
 Count.TextSize = 14
 Count.Font = Enum.Font.Gotham
 Count.Parent = Main
 
--- Toggle
-local Toggle = Instance.new("TextButton")
-Toggle.Size = UDim2.new(0, 120, 0, 38)
-Toggle.Position = UDim2.new(0.5, -60, 0, 105)
-Toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-Toggle.BorderSizePixel = 0
-Toggle.Text = "START"
-Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-Toggle.TextSize = 16
-Toggle.Font = Enum.Font.GothamBold
-Toggle.Parent = Main
+local Button = Instance.new("TextButton")
+Button.Position = UDim2.new(0.5, -65, 0, 130)
+Button.Size = UDim2.new(0, 130, 0, 40)
+Button.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Button.BorderSizePixel = 0
+Button.Text = "START"
+Button.TextColor3 = Color3.new(1, 1, 1)
+Button.TextSize = 16
+Button.Font = Enum.Font.GothamBold
+Button.Parent = Main
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 8)
-ToggleCorner.Parent = Toggle
-
--- Delay
-local DelayLabel = Instance.new("TextLabel")
-DelayLabel.Size = UDim2.new(1, -20, 0, 20)
-DelayLabel.Position = UDim2.new(0, 10, 0, 150)
-DelayLabel.BackgroundTransparency = 1
-DelayLabel.Text = "Scan delay: 0.15s"
-DelayLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
-DelayLabel.TextSize = 12
-DelayLabel.Font = Enum.Font.Gotham
-DelayLabel.Parent = Main
+Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 8)
 
 --==================================================
--- AUTO COLLECT
+-- CHARACTER
 --==================================================
 
-local Enabled = false
-local Delay = 0.15
+local function UpdateCharacter()
+    Character = Player.Character or Player.CharacterAdded:Wait()
+    Root = Character:WaitForChild("HumanoidRootPart")
+end
 
-local function UpdateUI()
+Player.CharacterAdded:Connect(function()
+    task.wait(1)
+    UpdateCharacter()
+end)
+
+--==================================================
+-- GET ITEM POSITION
+--==================================================
+
+local function GetPosition(Object)
+    if Object:IsA("BasePart") then
+        return Object.Position
+    end
+
+    if Object:IsA("Model") then
+        local Part = Object.PrimaryPart
+            or Object:FindFirstChildWhichIsA("BasePart", true)
+
+        if Part then
+            return Part.Position
+        end
+    end
+
+    return nil
+end
+
+--==================================================
+-- TELEPORT + COLLECT
+--==================================================
+
+local function CollectItem(Item)
+
+    if not Enabled then
+        return
+    end
+
+    if not Item or not Item.Parent then
+        return
+    end
+
+    local Position = GetPosition(Item)
+
+    if not Position then
+        return
+    end
+
+    Target.Text = "Target: " .. Item.Name
+
+    -- Teleport tới item
+    Root.CFrame = CFrame.new(
+        Position + Vector3.new(0, TeleportHeight, 0)
+    )
+
+    task.wait(CollectDelay)
+
+    -- Nhặt
+    if Item.Parent then
+        pcall(function()
+            Remote:FireServer(Item)
+        end)
+    end
+
+    task.wait(CollectDelay)
+end
+
+--==================================================
+-- BUTTON
+--==================================================
+
+Button.MouseButton1Click:Connect(function()
+
+    Enabled = not Enabled
+
     if Enabled then
         Status.Text = "● ON"
         Status.TextColor3 = Color3.fromRGB(80, 255, 120)
 
-        Toggle.Text = "STOP"
-        Toggle.BackgroundColor3 = Color3.fromRGB(150, 45, 45)
+        Button.Text = "STOP"
+        Button.BackgroundColor3 = Color3.fromRGB(150, 45, 45)
+
     else
         Status.Text = "● OFF"
         Status.TextColor3 = Color3.fromRGB(255, 80, 80)
 
-        Toggle.Text = "START"
-        Toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-    end
-end
+        Button.Text = "START"
+        Button.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 
-Toggle.MouseButton1Click:Connect(function()
-    Enabled = not Enabled
-    UpdateUI()
+        Target.Text = "Target: None"
+    end
 end)
 
+--==================================================
+-- MAIN LOOP
+--==================================================
+
 task.spawn(function()
+
     while Gui.Parent do
 
         if Enabled then
 
+            UpdateCharacter()
+
             local Items = Folder:GetChildren()
 
-            Count.Text = "Items found: " .. #Items
+            Count.Text = "Items: " .. #Items
 
-            for _, item in ipairs(Items) do
+            for _, Item in ipairs(Items) do
 
                 if not Enabled then
                     break
                 end
 
-                if item and item.Parent then
-                    pcall(function()
-                        CollectRemote:FireServer(item)
-                    end)
-
-                    task.wait(Delay)
+                if Item and Item.Parent then
+                    CollectItem(Item)
                 end
+
             end
 
         else
-            Count.Text = "Items found: " .. #Folder:GetChildren()
-            task.wait(0.2)
+
+            Count.Text = "Items: " .. #Folder:GetChildren()
+
         end
 
-        task.wait(Delay)
+        task.wait(ScanDelay)
     end
-end)
 
-UpdateUI()
+end)
