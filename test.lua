@@ -32,6 +32,32 @@ local TP_HEIGHT = 3
 local SCAN_DELAY = 0.05
 local COLLECT_DELAY = 0.08
 
+
+--==================================================
+-- ANTI AFK
+--==================================================
+
+local VirtualUser = game:GetService("VirtualUser")
+
+local AntiAFK = true
+
+Player.Idled:Connect(function()
+
+    if not AntiAFK then
+        return
+    end
+
+    pcall(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(
+            Vector2.new(0, 0)
+        )
+    end)
+
+    print("[ANTI-AFK] Prevented idle kick")
+
+end)
+
 --==================================================
 -- GUI
 --==================================================
