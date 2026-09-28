@@ -1,447 +1,162 @@
-```lua
---==================================================
--- 1TAP PACK FARM - DEBUG GUI
--- Roblox Studio / Authorized Project
---==================================================
+--// AUTO COLLECT UI
+--// Simple UI + Auto Collect
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser = game:GetService("VirtualUser")
 
 local Player = Players.LocalPlayer
-
-if not Player then
-    warn("[1TAP] LocalPlayer not found")
-    return
-end
-
---==================================================
--- CONFIG
---==================================================
-
-local Running = false
-local AntiAFK = true
-local Delay = 0.5
-
-local Logs = {}
-local MAX_LOGS = 100
-
---==================================================
--- LOG
---==================================================
-
-local function Log(message)
-    local line = os.date("[%H:%M:%S] ") .. tostring(message)
-
-    table.insert(Logs, line)
-
-    if #Logs > MAX_LOGS then
-        table.remove(Logs, 1)
-    end
-
-    print("[1TAP] " .. line)
-end
-
---==================================================
--- REMOVE OLD GUI
---==================================================
-
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local Old = PlayerGui:FindFirstChild("1tap_PackFarm")
+local CollectRemote = ReplicatedStorage:WaitForChild("Remotes")
+    :WaitForChild("CollectCollectableObject")
 
-if Old then
-    Old:Destroy()
-end
+local Folder = workspace:WaitForChild("Systems")
+    :WaitForChild("CollectableObjects")
 
 --==================================================
--- GUI
+-- UI
 --==================================================
 
 local Gui = Instance.new("ScreenGui")
-Gui.Name = "1tap_PackFarm"
+Gui.Name = "AutoCollectUI"
 Gui.ResetOnSpawn = false
-Gui.IgnoreGuiInset = true
 Gui.Parent = PlayerGui
 
 local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(560, 360)
-Main.Position = UDim2.new(0.5, -280, 0.5, -180)
-Main.BackgroundColor3 = Color3.fromRGB(25,25,30)
+Main.Size = UDim2.new(0, 280, 0, 180)
+Main.Position = UDim2.new(0.5, -140, 0.5, -90)
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 Main.BorderSizePixel = 0
 Main.Parent = Gui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0,10)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = Main
 
---==================================================
--- TITLE
---==================================================
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(70, 70, 80)
+Stroke.Thickness = 1
+Stroke.Parent = Main
 
+-- Title
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1,-20,0,40)
-Title.Position = UDim2.fromOffset(10,5)
+Title.Size = UDim2.new(1, -20, 0, 35)
+Title.Position = UDim2.new(0, 10, 0, 5)
 Title.BackgroundTransparency = 1
-Title.Text = "1TAP PACK FARM"
-Title.TextColor3 = Color3.new(1,1,1)
+Title.Text = "🧲 AUTO COLLECT"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 20
 Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
---==================================================
--- STATUS
---==================================================
-
+-- Status
 local Status = Instance.new("TextLabel")
-Status.Size = UDim2.fromOffset(520,30)
-Status.Position = UDim2.fromOffset(20,50)
-Status.BackgroundColor3 = Color3.fromRGB(35,35,42)
-Status.Text = "Status: Ready"
-Status.TextColor3 = Color3.new(1,1,1)
-Status.TextSize = 14
-Status.Font = Enum.Font.Gotham
+Status.Size = UDim2.new(1, -20, 0, 25)
+Status.Position = UDim2.new(0, 10, 0, 42)
+Status.BackgroundTransparency = 1
+Status.Text = "● OFF"
+Status.TextColor3 = Color3.fromRGB(255, 80, 80)
+Status.TextSize = 15
+Status.Font = Enum.Font.GothamSemibold
 Status.Parent = Main
 
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0,6)
-StatusCorner.Parent = Status
+-- Item count
+local Count = Instance.new("TextLabel")
+Count.Size = UDim2.new(1, -20, 0, 25)
+Count.Position = UDim2.new(0, 10, 0, 68)
+Count.BackgroundTransparency = 1
+Count.Text = "Items found: 0"
+Count.TextColor3 = Color3.fromRGB(200, 200, 200)
+Count.TextSize = 14
+Count.Font = Enum.Font.Gotham
+Count.Parent = Main
+
+-- Toggle
+local Toggle = Instance.new("TextButton")
+Toggle.Size = UDim2.new(0, 120, 0, 38)
+Toggle.Position = UDim2.new(0.5, -60, 0, 105)
+Toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Toggle.BorderSizePixel = 0
+Toggle.Text = "START"
+Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Toggle.TextSize = 16
+Toggle.Font = Enum.Font.GothamBold
+Toggle.Parent = Main
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = Toggle
+
+-- Delay
+local DelayLabel = Instance.new("TextLabel")
+DelayLabel.Size = UDim2.new(1, -20, 0, 20)
+DelayLabel.Position = UDim2.new(0, 10, 0, 150)
+DelayLabel.BackgroundTransparency = 1
+DelayLabel.Text = "Scan delay: 0.15s"
+DelayLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+DelayLabel.TextSize = 12
+DelayLabel.Font = Enum.Font.Gotham
+DelayLabel.Parent = Main
 
 --==================================================
--- BUTTON FACTORY
+-- AUTO COLLECT
 --==================================================
 
-local function Button(text,x,y,w)
-    local b = Instance.new("TextButton")
+local Enabled = false
+local Delay = 0.15
 
-    b.Size = UDim2.fromOffset(w or 160,38)
-    b.Position = UDim2.fromOffset(x,y)
-    b.BackgroundColor3 = Color3.fromRGB(45,45,55)
-    b.BorderSizePixel = 0
-    b.Text = text
-    b.TextColor3 = Color3.new(1,1,1)
-    b.TextSize = 14
-    b.Font = Enum.Font.Gotham
-    b.Parent = Main
+local function UpdateUI()
+    if Enabled then
+        Status.Text = "● ON"
+        Status.TextColor3 = Color3.fromRGB(80, 255, 120)
 
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0,6)
-    c.Parent = b
-
-    return b
-end
-
---==================================================
--- CONTROLS
---==================================================
-
-local Start = Button(
-    "START AUTO ROLL",
-    20,
-    95,
-    165
-)
-
-local Stop = Button(
-    "STOP",
-    195,
-    95,
-    165
-)
-
-local Scan = Button(
-    "SCAN PACKS / BOXES",
-    370,
-    95,
-    170
-)
-
-local AntiButton = Button(
-    "ANTI-AFK: ON",
-    20,
-    140,
-    165
-)
-
-local DelayBox = Instance.new("TextBox")
-DelayBox.Size = UDim2.fromOffset(165,38)
-DelayBox.Position = UDim2.fromOffset(195,140)
-DelayBox.BackgroundColor3 = Color3.fromRGB(40,40,48)
-DelayBox.TextColor3 = Color3.new(1,1,1)
-DelayBox.Text = "0.5"
-DelayBox.PlaceholderText = "Delay"
-DelayBox.TextSize = 14
-DelayBox.Font = Enum.Font.Gotham
-DelayBox.Parent = Main
-
-local DelayCorner = Instance.new("UICorner")
-DelayCorner.CornerRadius = UDim.new(0,6)
-DelayCorner.Parent = DelayBox
-
---==================================================
--- LOG WINDOW
---==================================================
-
-local LogFrame = Instance.new("ScrollingFrame")
-LogFrame.Size = UDim2.fromOffset(520,145)
-LogFrame.Position = UDim2.fromOffset(20,190)
-LogFrame.BackgroundColor3 = Color3.fromRGB(18,18,22)
-LogFrame.BorderSizePixel = 0
-LogFrame.ScrollBarThickness = 5
-LogFrame.CanvasSize = UDim2.new()
-LogFrame.Parent = Main
-
-local Layout = Instance.new("UIListLayout")
-Layout.Padding = UDim.new(0,2)
-Layout.Parent = LogFrame
-
-local function RefreshLogs()
-
-    for _,v in ipairs(LogFrame:GetChildren()) do
-        if v:IsA("TextLabel") then
-            v:Destroy()
-        end
-    end
-
-    for _,message in ipairs(Logs) do
-
-        local label = Instance.new("TextLabel")
-
-        label.Size = UDim2.new(1,-10,0,20)
-        label.BackgroundTransparency = 1
-        label.Text = message
-        label.TextColor3 = Color3.fromRGB(220,220,220)
-        label.TextSize = 12
-        label.Font = Enum.Font.Code
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = LogFrame
-    end
-
-    task.defer(function()
-        LogFrame.CanvasSize = UDim2.fromOffset(
-            0,
-            Layout.AbsoluteContentSize.Y + 5
-        )
-
-        LogFrame.CanvasPosition = Vector2.new(
-            0,
-            math.max(0,Layout.AbsoluteContentSize.Y)
-        )
-    end)
-end
-
---==================================================
--- SCAN
---==================================================
-
-local function FindPath(root,...)
-
-    local current = root
-
-    for _,name in ipairs({...}) do
-
-        current = current:FindFirstChild(name)
-
-        if not current then
-            return nil
-        end
-
-    end
-
-    return current
-end
-
-local function ScanEverything()
-
-    Log("Starting scan...")
-
-    local boxes = FindPath(
-        ReplicatedStorage,
-        "Shared",
-        "Core",
-        "Storage",
-        "Game",
-        "BoxesLibrary"
-    )
-
-    if boxes then
-
-        local count = 0
-
-        for _,obj in ipairs(boxes:GetDescendants()) do
-            count += 1
-            Log("BOX: "..obj.Name)
-        end
-
-        Log("BoxesLibrary objects: "..count)
-
+        Toggle.Text = "STOP"
+        Toggle.BackgroundColor3 = Color3.fromRGB(150, 45, 45)
     else
-        Log("ERROR: BoxesLibrary not found")
+        Status.Text = "● OFF"
+        Status.TextColor3 = Color3.fromRGB(255, 80, 80)
+
+        Toggle.Text = "START"
+        Toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
     end
-
-    local variants = FindPath(
-        ReplicatedStorage,
-        "Assets",
-        "NewVariants"
-    )
-
-    if variants then
-
-        local count = 0
-
-        for _,obj in ipairs(variants:GetDescendants()) do
-            count += 1
-            Log("MUTATION: "..obj.Name)
-        end
-
-        Log("NewVariants objects: "..count)
-
-    else
-        Log("ERROR: NewVariants not found")
-    end
-
-    Status.Text = "Status: Scan complete"
-
-    RefreshLogs()
 end
 
---==================================================
--- ANTI AFK
---==================================================
-
-Player.Idled:Connect(function()
-
-    if not AntiAFK then
-        return
-    end
-
-    pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
-    end)
-
-    Log("Anti-AFK triggered")
-    RefreshLogs()
+Toggle.MouseButton1Click:Connect(function()
+    Enabled = not Enabled
+    UpdateUI()
 end)
 
---==================================================
--- DELAY
---==================================================
+task.spawn(function()
+    while Gui.Parent do
 
-DelayBox.FocusLost:Connect(function()
+        if Enabled then
 
-    local value = tonumber(DelayBox.Text)
+            local Items = Folder:GetChildren()
 
-    if value and value >= 0.05 then
+            Count.Text = "Items found: " .. #Items
 
-        Delay = value
+            for _, item in ipairs(Items) do
 
-        Log("Delay = "..Delay)
+                if not Enabled then
+                    break
+                end
 
-    else
+                if item and item.Parent then
+                    pcall(function()
+                        CollectRemote:FireServer(item)
+                    end)
 
-        DelayBox.Text = tostring(Delay)
+                    task.wait(Delay)
+                end
+            end
 
-        Log("Invalid delay")
-    end
-
-    RefreshLogs()
-end)
-
---==================================================
--- ANTI AFK BUTTON
---==================================================
-
-AntiButton.MouseButton1Click:Connect(function()
-
-    AntiAFK = not AntiAFK
-
-    AntiButton.Text =
-        "ANTI-AFK: " ..
-        (AntiAFK and "ON" or "OFF")
-
-    Log(
-        "Anti-AFK " ..
-        (AntiAFK and "enabled" or "disabled")
-    )
-
-    RefreshLogs()
-end)
-
---==================================================
--- SCAN BUTTON
---==================================================
-
-Scan.MouseButton1Click:Connect(function()
-
-    ScanEverything()
-
-end)
-
---==================================================
--- START
---==================================================
-
-Start.MouseButton1Click:Connect(function()
-
-    if Running then
-        Log("Auto Roll already running")
-        RefreshLogs()
-        return
-    end
-
-    Running = true
-
-    Status.Text = "Status: Running"
-
-    Log("Auto Roll started")
-    RefreshLogs()
-
-    task.spawn(function()
-
-        while Running do
-
-            -- Authorized-project roll hook:
-            --
-            -- Call your own project's roll function here.
-            --
-            -- Example:
-            -- RollRemote:FireServer()
-
-            Log("Roll tick")
-            RefreshLogs()
-
-            task.wait(Delay)
+        else
+            Count.Text = "Items found: " .. #Folder:GetChildren()
+            task.wait(0.2)
         end
 
-    end)
-
+        task.wait(Delay)
+    end
 end)
 
---==================================================
--- STOP
---==================================================
-
-Stop.MouseButton1Click:Connect(function()
-
-    Running = false
-
-    Status.Text = "Status: Stopped"
-
-    Log("Auto Roll stopped")
-    RefreshLogs()
-
-end)
-
---==================================================
--- INITIAL
---==================================================
-
-Log("GUI loaded successfully")
-Log("Ready")
-
-RefreshLogs()
-
-print("[1TAP] GUI loaded")
-```
+UpdateUI()
