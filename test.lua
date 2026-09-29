@@ -1,8 +1,10 @@
 --==================================================
--- INSTANT TOKEN COLLECTOR V5.1
+-- INSTANT TOKEN COLLECTOR V5.2
 -- ALL 3 FOLDERS
--- ANTI-AFK V2
+-- REAL ANTI-AFK
 -- VARIANT POSITION MONITOR
+-- SMART TELEPORT
+-- NO TELEPORT LOOP
 -- HIDE / SHOW
 -- DRAGGABLE
 --==================================================
@@ -19,15 +21,48 @@ local Player = Players.LocalPlayer
 --==================================================
 
 local TP_HEIGHT = 3
-local SCAN_DELAY = 0.05
+
+-- Main scan interval
+local SCAN_DELAY = 0.08
+
+-- Delay before firing collect remote
 local COLLECT_DELAY = 0.05
+
+-- Minimum movement required before treating
+-- an existing object as moved
 local MOVE_DISTANCE = 0.5
 
-local Running = false
+-- Prevent the same object from being collected
+-- repeatedly in a very short period
+local OBJECT_COOLDOWN = 0.50
+
+-- Prevent repeated collection of the same
+-- position caused by tiny position changes
+local POSITION_COOLDOWN = 0.35
+
+-- Anti-AFK
 local AntiAFK = true
+
+-- Collector state
+local Running = false
+
+--==================================================
+-- STATE
+--==================================================
 
 local Processing = {}
 local LastPositions = {}
+local LastCollectedPosition = {}
+local LastCollectedTime = {}
+
+local Connections = {}
+
+local VariantCount = 0
+local ActiveCount = 0
+local CollectCount = 0
+
+local LastSource = "NONE"
+local LastObject = "NONE"
 
 --==================================================
 -- SYSTEMS
@@ -36,7 +71,7 @@ local LastPositions = {}
 local Systems = workspace:FindFirstChild("Systems")
 
 if not Systems then
-    warn("[TOKEN] Systems not found")
+    warn("[TOKEN V5.2] Systems not found")
     return
 end
 
@@ -57,25 +92,29 @@ local Remotes =
     ReplicatedStorage:FindFirstChild("Remotes")
 
 local Remote =
-    Remotes and
-    Remotes:FindFirstChild(
+    Remotes
+    and Remotes:FindFirstChild(
         "CollectCollectableObject"
     )
 
 if Remote then
+
     print(
-        "[TOKEN] Remote:",
+        "[TOKEN V5.2] Remote:",
         Remote:GetFullName(),
         Remote.ClassName
     )
+
 else
+
     warn(
-        "[TOKEN] CollectCollectableObject not found"
+        "[TOKEN V5.2] CollectCollectableObject not found"
     )
+
 end
 
 --==================================================
--- OLD GUI
+-- OLD GUI CLEANUP
 --==================================================
 
 local PlayerGui =
@@ -83,7 +122,7 @@ local PlayerGui =
 
 local Old =
     PlayerGui:FindFirstChild(
-        "InstantTokenCollectorV51"
+        "InstantTokenCollectorV52"
     )
 
 if Old then
@@ -98,7 +137,7 @@ local Gui =
     Instance.new("ScreenGui")
 
 Gui.Name =
-    "InstantTokenCollectorV51"
+    "InstantTokenCollectorV52"
 
 Gui.ResetOnSpawn = false
 Gui.IgnoreGuiInset = true
@@ -111,15 +150,22 @@ Gui.Parent = PlayerGui
 local Main =
     Instance.new("Frame")
 
+Main.Name = "Main"
+
 Main.Size =
-    UDim2.new(0,360,0,285)
+    UDim2.new(
+        0,
+        360,
+        0,
+        300
+    )
 
 Main.Position =
     UDim2.new(
         0.5,
         -180,
         0.5,
-        -142
+        -150
     )
 
 Main.BackgroundColor3 =
@@ -136,7 +182,7 @@ local MainCorner =
     Instance.new("UICorner")
 
 MainCorner.CornerRadius =
-    UDim.new(0,10)
+    UDim.new(0, 10)
 
 MainCorner.Parent = Main
 
@@ -166,10 +212,10 @@ Title.Position =
 Title.BackgroundTransparency = 1
 
 Title.Text =
-    "⚡ Token Collector V5.1"
+    "⚡ Token Collector V5.2"
 
 Title.TextColor3 =
-    Color3.new(1,1,1)
+    Color3.new(1, 1, 1)
 
 Title.TextSize = 17
 
@@ -189,7 +235,12 @@ local Hide =
     Instance.new("TextButton")
 
 Hide.Size =
-    UDim2.new(0,35,0,30)
+    UDim2.new(
+        0,
+        35,
+        0,
+        30
+    )
 
 Hide.Position =
     UDim2.new(
@@ -204,7 +255,7 @@ Hide.Text = "—"
 Hide.TextSize = 18
 
 Hide.TextColor3 =
-    Color3.new(1,1,1)
+    Color3.new(1, 1, 1)
 
 Hide.BackgroundColor3 =
     Color3.fromRGB(
@@ -213,13 +264,14 @@ Hide.BackgroundColor3 =
         55
     )
 
+Hide.BorderSizePixel = 0
 Hide.Parent = Main
 
 local HideCorner =
     Instance.new("UICorner")
 
 HideCorner.CornerRadius =
-    UDim.new(0,6)
+    UDim.new(0, 6)
 
 HideCorner.Parent = Hide
 
@@ -231,7 +283,12 @@ local Close =
     Instance.new("TextButton")
 
 Close.Size =
-    UDim2.new(0,35,0,30)
+    UDim2.new(
+        0,
+        35,
+        0,
+        30
+    )
 
 Close.Position =
     UDim2.new(
@@ -246,7 +303,7 @@ Close.Text = "X"
 Close.TextSize = 15
 
 Close.TextColor3 =
-    Color3.new(1,1,1)
+    Color3.new(1, 1, 1)
 
 Close.BackgroundColor3 =
     Color3.fromRGB(
@@ -255,13 +312,14 @@ Close.BackgroundColor3 =
         40
     )
 
+Close.BorderSizePixel = 0
 Close.Parent = Main
 
 local CloseCorner =
     Instance.new("UICorner")
 
 CloseCorner.CornerRadius =
-    UDim.new(0,6)
+    UDim.new(0, 6)
 
 CloseCorner.Parent = Close
 
@@ -321,8 +379,8 @@ Info.Size =
     UDim2.new(
         1,
         -20,
-        1,
-        -155
+        0,
+        125
     )
 
 Info.Position =
@@ -433,7 +491,7 @@ Toggle.Text =
     "START"
 
 Toggle.TextColor3 =
-    Color3.new(1,1,1)
+    Color3.new(1, 1, 1)
 
 Toggle.TextSize = 15
 
@@ -447,13 +505,14 @@ Toggle.BackgroundColor3 =
         65
     )
 
+Toggle.BorderSizePixel = 0
 Toggle.Parent = Main
 
 local ToggleCorner =
     Instance.new("UICorner")
 
 ToggleCorner.CornerRadius =
-    UDim.new(0,7)
+    UDim.new(0, 7)
 
 ToggleCorner.Parent = Toggle
 
@@ -485,7 +544,7 @@ Mini.Text = "⚡"
 Mini.TextSize = 25
 
 Mini.TextColor3 =
-    Color3.new(1,1,1)
+    Color3.new(1, 1, 1)
 
 Mini.BackgroundColor3 =
     Color3.fromRGB(
@@ -494,15 +553,16 @@ Mini.BackgroundColor3 =
         30
     )
 
-Mini.Visible = false
+Mini.BorderSizePixel = 0
 
+Mini.Visible = false
 Mini.Parent = Gui
 
 local MiniCorner =
     Instance.new("UICorner")
 
 MiniCorner.CornerRadius =
-    UDim.new(1,0)
+    UDim.new(1, 0)
 
 MiniCorner.Parent = Mini
 
@@ -514,7 +574,7 @@ local Dragging = false
 local DragStart
 local StartPosition
 
-Title.InputBegan:Connect(function(Input)
+local function BeginDrag(Input)
 
     if
         Input.UserInputType ==
@@ -530,9 +590,9 @@ Title.InputBegan:Connect(function(Input)
 
     end
 
-end)
+end
 
-Title.InputEnded:Connect(function(Input)
+local function EndDrag(Input)
 
     if
         Input.UserInputType ==
@@ -546,7 +606,10 @@ Title.InputEnded:Connect(function(Input)
 
     end
 
-end)
+end
+
+Title.InputBegan:Connect(BeginDrag)
+Title.InputEnded:Connect(EndDrag)
 
 UserInputService.InputChanged:Connect(function(Input)
 
@@ -561,7 +624,9 @@ UserInputService.InputChanged:Connect(function(Input)
         Input.UserInputType ~=
         Enum.UserInputType.Touch
     then
+
         return
+
     end
 
     local Delta =
@@ -661,15 +726,16 @@ local function Teleport(Position)
         return false
     end
 
-    Character:PivotTo(
-        CFrame.new(
-            Position +
-            Vector3.new(
-                0,
-                TP_HEIGHT,
-                0
-            )
+    local Target =
+        Position +
+        Vector3.new(
+            0,
+            TP_HEIGHT,
+            0
         )
+
+    Character:PivotTo(
+        CFrame.new(Target)
     )
 
     return true
@@ -677,54 +743,48 @@ local function Teleport(Position)
 end
 
 --==================================================
--- COUNTERS
+-- UPDATE INFO
 --==================================================
 
-local VariantCount = 0
-local ActiveCount = 0
-local CollectCount = 0
-
-local function UpdateInfo(
-    Source,
-    Object
-)
-
-    local Name = "NONE"
-
-    if Object then
-        Name = Object.Name
-    end
+local function UpdateInfo()
 
     Info.Text =
         "Variant: " ..
-        VariantCount ..
+        tostring(VariantCount) ..
         "\n" ..
 
         "Active: " ..
-        ActiveCount ..
+        tostring(ActiveCount) ..
         "\n" ..
 
         "Collectable: " ..
-        CollectCount ..
+        tostring(CollectCount) ..
         "\n" ..
 
         "Last: " ..
-        Source ..
+        tostring(LastSource) ..
         " -> " ..
-        Name
+        tostring(LastObject)
 
 end
 
 --==================================================
--- REMOTE
+-- REMOTE COLLECT
 --==================================================
 
 local function FireCollect(Object)
 
     if not Remote then
+
         warn(
-            "[REMOTE] Remote missing"
+            "[REMOTE] CollectCollectableObject missing"
         )
+
+        return false
+
+    end
+
+    if not Object then
         return false
     end
 
@@ -758,6 +818,87 @@ local function FireCollect(Object)
 end
 
 --==================================================
+-- OBJECT VALIDATION
+--==================================================
+
+local function IsCollectableObject(Object)
+
+    if not Object then
+        return false
+    end
+
+    return
+        Object:IsA("BasePart")
+        or
+        Object:IsA("Model")
+
+end
+
+--==================================================
+-- SMART COOLDOWN
+--==================================================
+
+local function CanProcess(Object, Position)
+
+    if not Object then
+        return false
+    end
+
+    local Now =
+        os.clock()
+
+    -- Same object currently processing
+    if Processing[Object] then
+        return false
+    end
+
+    -- Same object recently processed
+    local LastTime =
+        LastCollectedTime[Object]
+
+    if LastTime then
+
+        if
+            Now - LastTime
+            <
+            OBJECT_COOLDOWN
+        then
+
+            return false
+
+        end
+
+    end
+
+    -- Prevent tiny position changes
+    local OldPosition =
+        LastCollectedPosition[Object]
+
+    if OldPosition and Position then
+
+        local Distance =
+            (
+                Position -
+                OldPosition
+            ).Magnitude
+
+        if
+            Distance
+            <
+            MOVE_DISTANCE
+        then
+
+            return false
+
+        end
+
+    end
+
+    return true
+
+end
+
+--==================================================
 -- COLLECT
 --==================================================
 
@@ -770,19 +911,7 @@ local function Collect(
         return
     end
 
-    if not Object then
-        return
-    end
-
-    if
-        not Object:IsA("BasePart")
-        and
-        not Object:IsA("Model")
-    then
-        return
-    end
-
-    if Processing[Object] then
+    if not IsCollectableObject(Object) then
         return
     end
 
@@ -793,8 +922,25 @@ local function Collect(
         return
     end
 
+    if not CanProcess(
+        Object,
+        Position
+    ) then
+
+        return
+
+    end
+
+    -- Mark immediately
     Processing[Object] = true
 
+    LastCollectedTime[Object] =
+        os.clock()
+
+    LastCollectedPosition[Object] =
+        Position
+
+    -- Counter
     if Source == "Variant" then
 
         VariantCount += 1
@@ -809,10 +955,13 @@ local function Collect(
 
     end
 
-    UpdateInfo(
-        Source,
-        Object
-    )
+    LastSource =
+        Source
+
+    LastObject =
+        Object.Name
+
+    UpdateInfo()
 
     print(
         "[FOUND]",
@@ -820,8 +969,14 @@ local function Collect(
         Object:GetFullName()
     )
 
-    -- TP
-    if Teleport(Position) then
+    --==================================================
+    -- TELEPORT
+    --==================================================
+
+    local Teleported =
+        Teleport(Position)
+
+    if Teleported then
 
         print(
             "[TP]",
@@ -831,17 +986,28 @@ local function Collect(
 
     end
 
+    --==================================================
+    -- COLLECT
+    --==================================================
+
     task.wait(
         COLLECT_DELAY
     )
 
-    -- Remote
-    FireCollect(
-        Object
-    )
+    if Running then
+
+        FireCollect(
+            Object
+        )
+
+    end
+
+    --==================================================
+    -- RELEASE PROCESSING
+    --==================================================
 
     task.delay(
-        0.35,
+        OBJECT_COOLDOWN,
         function()
 
             Processing[Object] = nil
@@ -861,11 +1027,7 @@ local function ProcessVariant(Object)
         return
     end
 
-    if
-        not Object:IsA("BasePart")
-        and
-        not Object:IsA("Model")
-    then
+    if not IsCollectableObject(Object) then
         return
     end
 
@@ -899,11 +1061,7 @@ local function ProcessActive(Object)
         return
     end
 
-    if
-        not Object:IsA("BasePart")
-        and
-        not Object:IsA("Model")
-    then
+    if not IsCollectableObject(Object) then
         return
     end
 
@@ -924,11 +1082,7 @@ local function ProcessCollectable(Object)
         return
     end
 
-    if
-        not Object:IsA("BasePart")
-        and
-        not Object:IsA("Model")
-    then
+    if not IsCollectableObject(Object) then
         return
     end
 
@@ -953,14 +1107,10 @@ local function ScanFolder(
     end
 
     for _, Object in ipairs(
-        Folder:GetChildren()
+        Folder:GetDescendants()
     ) do
 
-        if
-            Object:IsA("BasePart")
-            or
-            Object:IsA("Model")
-        then
+        if IsCollectableObject(Object) then
 
             task.spawn(
                 Processor,
@@ -974,33 +1124,75 @@ local function ScanFolder(
 end
 
 --==================================================
+-- SET INITIAL POSITION
+--==================================================
+
+local function CacheFolderPositions(Folder)
+
+    if not Folder then
+        return
+    end
+
+    for _, Object in ipairs(
+        Folder:GetDescendants()
+    ) do
+
+        if IsCollectableObject(Object) then
+
+            local Position =
+                GetPosition(Object)
+
+            if Position then
+
+                LastPositions[Object] =
+                    Position
+
+            end
+
+        end
+
+    end
+
+end
+
+--==================================================
 -- VARIANT NEW OBJECT
 --==================================================
 
 if VariantFolder then
 
-    VariantFolder.DescendantAdded:Connect(
-        function(Object)
+    table.insert(
+        Connections,
 
-            task.wait()
+        VariantFolder.DescendantAdded:Connect(
+            function(Object)
 
-            if not Running then
-                return
+                task.wait()
+
+                if not Running then
+                    return
+                end
+
+                if IsCollectableObject(Object) then
+
+                    local Position =
+                        GetPosition(Object)
+
+                    if Position then
+
+                        LastPositions[Object] =
+                            Position
+
+                    end
+
+                    ProcessVariant(
+                        Object
+                    )
+
+                end
+
             end
-
-            if
-                Object:IsA("BasePart")
-                or
-                Object:IsA("Model")
-            then
-
-                ProcessVariant(
-                    Object
-                )
-
-            end
-
-        end
+        )
     )
 
 end
@@ -1011,28 +1203,38 @@ end
 
 if ActiveFolder then
 
-    ActiveFolder.DescendantAdded:Connect(
-        function(Object)
+    table.insert(
+        Connections,
 
-            task.wait()
+        ActiveFolder.DescendantAdded:Connect(
+            function(Object)
 
-            if not Running then
-                return
+                task.wait()
+
+                if not Running then
+                    return
+                end
+
+                if IsCollectableObject(Object) then
+
+                    local Position =
+                        GetPosition(Object)
+
+                    if Position then
+
+                        LastPositions[Object] =
+                            Position
+
+                    end
+
+                    ProcessActive(
+                        Object
+                    )
+
+                end
+
             end
-
-            if
-                Object:IsA("BasePart")
-                or
-                Object:IsA("Model")
-            then
-
-                ProcessActive(
-                    Object
-                )
-
-            end
-
-        end
+        )
     )
 
 end
@@ -1043,28 +1245,38 @@ end
 
 if CollectFolder then
 
-    CollectFolder.DescendantAdded:Connect(
-        function(Object)
+    table.insert(
+        Connections,
 
-            task.wait()
+        CollectFolder.DescendantAdded:Connect(
+            function(Object)
 
-            if not Running then
-                return
+                task.wait()
+
+                if not Running then
+                    return
+                end
+
+                if IsCollectableObject(Object) then
+
+                    local Position =
+                        GetPosition(Object)
+
+                    if Position then
+
+                        LastPositions[Object] =
+                            Position
+
+                    end
+
+                    ProcessCollectable(
+                        Object
+                    )
+
+                end
+
             end
-
-            if
-                Object:IsA("BasePart")
-                or
-                Object:IsA("Model")
-            then
-
-                ProcessCollectable(
-                    Object
-                )
-
-            end
-
-        end
+        )
     )
 
 end
@@ -1089,11 +1301,7 @@ task.spawn(function()
                     VariantFolder:GetDescendants()
                 ) do
 
-                    if
-                        Object:IsA("BasePart")
-                        or
-                        Object:IsA("Model")
-                    then
+                    if IsCollectableObject(Object) then
 
                         local Position =
                             GetPosition(Object)
@@ -1108,25 +1316,35 @@ task.spawn(function()
                                 LastPositions[Object] =
                                     Position
 
-                            elseif
-                                (
-                                    Position -
-                                    OldPosition
-                                ).Magnitude
-                                >= MOVE_DISTANCE
-                            then
+                            else
 
-                                LastPositions[Object] =
-                                    Position
+                                local Distance =
+                                    (
+                                        Position -
+                                        OldPosition
+                                    ).Magnitude
 
-                                print(
-                                    "[VARIANT MOVED]",
-                                    Object:GetFullName()
-                                )
+                                if
+                                    Distance
+                                    >=
+                                    MOVE_DISTANCE
+                                then
 
-                                ProcessVariant(
-                                    Object
-                                )
+                                    LastPositions[Object] =
+                                        Position
+
+                                    print(
+                                        "[VARIANT MOVED]",
+                                        Object:GetFullName(),
+                                        "Distance:",
+                                        Distance
+                                    )
+
+                                    ProcessVariant(
+                                        Object
+                                    )
+
+                                end
 
                             end
 
@@ -1145,14 +1363,10 @@ task.spawn(function()
             if ActiveFolder then
 
                 for _, Object in ipairs(
-                    ActiveFolder:GetChildren()
+                    ActiveFolder:GetDescendants()
                 ) do
 
-                    if
-                        Object:IsA("BasePart")
-                        or
-                        Object:IsA("Model")
-                    then
+                    if IsCollectableObject(Object) then
 
                         local Position =
                             GetPosition(Object)
@@ -1167,20 +1381,28 @@ task.spawn(function()
                                 LastPositions[Object] =
                                     Position
 
-                            elseif
-                                (
-                                    Position -
-                                    OldPosition
-                                ).Magnitude
-                                >= MOVE_DISTANCE
-                            then
+                            else
 
-                                LastPositions[Object] =
-                                    Position
+                                local Distance =
+                                    (
+                                        Position -
+                                        OldPosition
+                                    ).Magnitude
 
-                                ProcessActive(
-                                    Object
-                                )
+                                if
+                                    Distance
+                                    >=
+                                    MOVE_DISTANCE
+                                then
+
+                                    LastPositions[Object] =
+                                        Position
+
+                                    ProcessActive(
+                                        Object
+                                    )
+
+                                end
 
                             end
 
@@ -1199,14 +1421,10 @@ task.spawn(function()
             if CollectFolder then
 
                 for _, Object in ipairs(
-                    CollectFolder:GetChildren()
+                    CollectFolder:GetDescendants()
                 ) do
 
-                    if
-                        Object:IsA("BasePart")
-                        or
-                        Object:IsA("Model")
-                    then
+                    if IsCollectableObject(Object) then
 
                         local Position =
                             GetPosition(Object)
@@ -1221,20 +1439,28 @@ task.spawn(function()
                                 LastPositions[Object] =
                                     Position
 
-                            elseif
-                                (
-                                    Position -
-                                    OldPosition
-                                ).Magnitude
-                                >= MOVE_DISTANCE
-                            then
+                            else
 
-                                LastPositions[Object] =
-                                    Position
+                                local Distance =
+                                    (
+                                        Position -
+                                        OldPosition
+                                    ).Magnitude
 
-                                ProcessCollectable(
-                                    Object
-                                )
+                                if
+                                    Distance
+                                    >=
+                                    MOVE_DISTANCE
+                                then
+
+                                    LastPositions[Object] =
+                                        Position
+
+                                    ProcessCollectable(
+                                        Object
+                                    )
+
+                                end
 
                             end
 
@@ -1257,10 +1483,105 @@ task.spawn(function()
 end)
 
 --==================================================
+-- ANTI AFK
+--==================================================
+
+local AntiAFKConnection
+
+local function StartAntiAFK()
+
+    if AntiAFKConnection then
+
+        AntiAFKConnection:Disconnect()
+        AntiAFKConnection = nil
+
+    end
+
+    AntiAFK = true
+
+    AntiAFKConnection =
+        Player.Idled:Connect(
+            function()
+
+                if not AntiAFK then
+                    return
+                end
+
+                pcall(function()
+
+                    VirtualUser:Button2Down(
+                        Vector2.new(0, 0),
+                        workspace.CurrentCamera.CFrame
+                    )
+
+                    task.wait(0.1)
+
+                    VirtualUser:Button2Up(
+                        Vector2.new(0, 0),
+                        workspace.CurrentCamera.CFrame
+                    )
+
+                end)
+
+                print(
+                    "[ANTI-AFK] Activity sent"
+                )
+
+            end
+        )
+
+    AFKStatus.Text =
+        "Anti-AFK: ON"
+
+    AFKStatus.TextColor3 =
+        Color3.fromRGB(
+            100,
+            255,
+            120
+        )
+
+    print(
+        "[ANTI-AFK] Started"
+    )
+
+end
+
+local function StopAntiAFK()
+
+    AntiAFK = false
+
+    if AntiAFKConnection then
+
+        AntiAFKConnection:Disconnect()
+        AntiAFKConnection = nil
+
+    end
+
+    AFKStatus.Text =
+        "Anti-AFK: OFF"
+
+    AFKStatus.TextColor3 =
+        Color3.fromRGB(
+            255,
+            100,
+            100
+        )
+
+    print(
+        "[ANTI-AFK] Stopped"
+    )
+
+end
+
+--==================================================
 -- START
 --==================================================
 
 local function Start()
+
+    if Running then
+        return
+    end
 
     Running = true
 
@@ -1285,10 +1606,25 @@ local function Start()
         )
 
     print("==============================")
-    print(" TOKEN COLLECTOR V5.1 STARTED")
+    print(" TOKEN COLLECTOR V5.2 STARTED")
     print("==============================")
 
-    -- Scan existing objects
+    -- Cache current positions first
+    -- so the monitor does not consider
+    -- existing objects as "moved"
+    CacheFolderPositions(
+        VariantFolder
+    )
+
+    CacheFolderPositions(
+        ActiveFolder
+    )
+
+    CacheFolderPositions(
+        CollectFolder
+    )
+
+    -- Existing objects
     ScanFolder(
         VariantFolder,
         ProcessVariant
@@ -1312,6 +1648,10 @@ end
 
 local function Stop()
 
+    if not Running then
+        return
+    end
+
     Running = false
 
     Status.Text =
@@ -1334,6 +1674,9 @@ local function Stop()
             65
         )
 
+    -- Clear processing state
+    Processing = {}
+
     print(
         "========== TOKEN STOP =========="
     )
@@ -1347,9 +1690,13 @@ end
 Toggle.MouseButton1Click:Connect(function()
 
     if Running then
+
         Stop()
+
     else
+
         Start()
+
     end
 
 end)
@@ -1361,18 +1708,64 @@ end)
 Close.MouseButton1Click:Connect(function()
 
     Running = false
-    AntiAFK = false
+
+    StopAntiAFK()
+
+    for _, Connection in ipairs(
+        Connections
+    ) do
+
+        pcall(function()
+            Connection:Disconnect()
+        end)
+
+    end
+
+    Connections = {}
+
+    Processing = {}
+    LastPositions = {}
+    LastCollectedPosition = {}
+    LastCollectedTime = {}
 
     Gui:Destroy()
 
+    print(
+        "[TOKEN V5.2] CLOSED"
+    )
+
 end)
+
+--==================================================
+-- PLAYER RESPAWN
+--==================================================
+
+Player.CharacterAdded:Connect(function()
+
+    task.wait(1)
+
+    if Running then
+
+        print(
+            "[TOKEN V5.2] Character respawned"
+        )
+
+    end
+
+end)
+
+--==================================================
+-- START ANTI-AFK
+--==================================================
+
+StartAntiAFK()
 
 --==================================================
 -- LOADED
 --==================================================
 
 print("==============================")
-print(" TOKEN COLLECTOR V5.1 LOADED")
+print(" TOKEN COLLECTOR V5.2 LOADED")
 print("==============================")
 
 print(
